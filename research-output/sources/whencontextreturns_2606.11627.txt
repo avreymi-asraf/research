@@ -1,0 +1,2218 @@
+August 5, 2026
+When Context Returns:
+Toward Robust Internalization in On-Policy Distillation
+Xun Wang
+1
+, Ruishuo Chen
+1
+, Zhuoran Li
+1
+, Yu Chen
+1
+, and Longbo Huang
+1 #
+1
+IIIS, Tsinghua University # Corresponding Author: longbohuang@tsinghua.edu.cn
+Abstract. Recent work has shown that on-policy distillation can internalize privileged context, such as
+system prompts or task hints, into a student model so that the context is no longer needed at inference
+time. However, we identify a counterintuitive and previously unstudied phenomenon: reintroducing
+the original privileged context to the distilled student often degrades its performance, even on instances
+it already solves correctly without context. We term this phenomenon context-induced degradation and
+argue that robust internalization requires not only matching the teacher’s context-conditioned behavior,
+but also remaining stable when the privileged context is reintroduced, a desirable property we call
+context invariance. To promote this property, we formulate a novel view-robust internalization risk
+and propose No-Context Anchoring (NCA), a lightweight yet effective consistency regularizer that uses
+the student’s stop-gradient no-context output as an anchor and aligns its context-conditioned output
+via forward KL divergence. Across 14 configurations spanning diverse domains and model families,
+NCA improves context-conditioned accuracy in most settings and reduces context harm in 12 out of 14,
+while preserving or improving no-context performance, demonstrating greater robustness to context
+reintroduction.
+1. Introduction
+Language models are often augmented with privileged context, including system prompts encoding behavioral
+constraints, chain-of-thought traces providing expert reasoning (Wei et al., 2022), and game-state descriptions
+summarizing decision-relevant information. Such context can improve performance through in-context
+learning (Brown et al., 2020; Dong et al., 2024), but retaining it at inference time increases latency and
+serving cost and may expose sensitive instructions to end users. To avoid these drawbacks, on-policy self-
+distillation (Zhao et al., 2026a; Shenfeld et al., 2026; Hübotter et al., 2026) trains a model to internalize
+privileged context by distilling its own context-conditioned behavior into the context-free behavior. Ye et al.
+(2026) generalize this idea to on-policy context distillation by allowing distinct teacher and student models,
+enabling the student to perform well at deployment without requiring the context.
+A natural question arises: if the student has truly internalized the privileged information, what happens when
+the context is reintroduced? Intuitively, re-presenting already-internalized information shall be an idempotent
+operation (Liu et al., 2026): a student who has memorized the textbook shall not perform worse when allowed
+to consult it. Strikingly, we observe the opposite. Across the majority of settings, reintroducing the very context
+from which the student learned reduces its accuracy and can even overturn predictions that were correct
+without context (Figure 1, left). We call this counterintuitive phenomenon context-induced degradation.
+We trace this degradation to an asymmetry in the standard OPD objective. It optimizes exclusively for what we
+call privileged fidelity, requiring the context-free student to match the context-conditioned teacher while leaving
+the student’s behavior with context unconstrained. This limitation motivates a complementary requirement,
+context invariance: once the privileged information has been internalized into the model’s parameters, the
+student’s output shall remain stable whether the context is present or absent.
+To formalize these two requirements, we introduce a novel view-robust internalization risk that evaluates both
+the context-free and context-conditioned student views against the privileged teacher. From this risk, we derive
+a symmetric extension of standard OPD that separately aligns both student views with the teacher. Although
+1
+arXiv:2606.11627v2 [cs.LG] 4 Aug 2026
+
+Toward Robust Internalization in On-Policy Distillation
+  
+*%'%'#,")+
+ 
+
+ 
+
+ 
+
+."*#"!!
+/ (!,0
+/ !,0
+-*+/ (!,0
+-*+/ !,0
+(',"0,
+*&2
+(,$%"/
+-!!"++1
+(',"0,( -+,'"++
+
+
+ 
+ 
+
+
+
+
+ -*+
+ 
+ 
+     
+&!#!#(%'
+
+
+
+
+
+ 
+*&
++$(,
++(,
+)&'+$(,
+)&'+(,
+&"( 
+$)'(#
+
+
+
+
+ 
+
+
+Figure 1 | Left: OPD distills context-conditioned teacher behavior into a context-free student, yet reintroducing 𝑐 can
+reduce performance. Middle: Across all 14 configurations, NCA reduces context harm and improves both-view success,
+averaged over the final three checkpoints. Right: Three-checkpoint moving-average curves over the 12 no-thinking settings
+with a common 100-step schedule. OPD eventually performs worse with context, whereas NCA narrows the late-stage gap.
+context invariance follows at the exact optimum, we empirically find that this indirect teacher matching does
+not reliably realize it under approximate optimization.
+Motivated by this gap, we formulate context invariance as an explicit constraint while preserving the standard
+OPD objective for privileged fidelity. We then propose No-Context Anchoring (NCA), a lightweight yet effective
+penalty relaxation that treats the student’s no-context output as a stop-gradient anchor and aligns the context-
+conditioned output to it through forward KL divergence, adding only one forward pass per training step.
+Across 14 configurations spanning diverse domains and model families, NCA improves context-conditioned
+accuracy in the majority of settings and reduces context harm in 12 out of 14, yielding an average 7.2-
+percentage-point reduction in harm and a 5.3-point gain in both-view success (Figure 1, middle). The training
+curves over the 12 no-thinking settings further show that NCA substantially narrows the late-stage gap between
+context-free and context-conditioned accuracy (Figure 1, right).
+In summary, our main contributions are:
+• We identify context-induced degradation, a counterintuitive phenomenon in which reintroducing priv-
+ileged context can overturn correct context-free predictions, and introduce context invariance as a
+desirable property of robust internalization.
+• We formulate robust internalization through a novel view-robust internalization risk that evaluates both
+student views against the privileged teacher, and propose No-Context Anchoring (NCA), a lightweight
+yet effective consistency regularizer that directly promotes context invariance using a stop-gradient
+no-context anchor and only one additional forward pass.
+• Across 14 configurations spanning diverse domains and model families, NCA improves context-conditioned
+accuracy in most settings and reduces context harm in 12 out of 14, with an average reduction of 7.2
+percentage points. A mechanistic case study further shows that NCA substantially increases the layer-wise
+hidden-state similarity between context-free and context-conditioned inputs.
+2. Related Work
+Knowledge Distillation and On-Policy Distillation. Knowledge distillation (Hinton et al., 2015) transfers
+knowledge from a teacher to a student by matching their output distributions, and has been widely applied
+to LLMs for distilling reasoning capabilities (Guo et al., 2025), instruction following (Ouyang et al., 2022),
+and general capabilities (Gu et al., 2024; Ko et al., 2024; Xu et al., 2024). Recently, on-policy distillation
+(OPD) (Agarwal et al., 2024; DeepSeek-AI, 2026; Xiao et al., 2026; Fu et al., 2026; Li et al., 2026b; Jin et al.,
+2026) generates training data from the student’s own distribution, mitigating the train–inference distribution
+mismatch of off-policy approaches. When the teacher is the model itself conditioned on privileged context, this
+becomes on-policy self-distillation (Zhao et al., 2026a; Shenfeld et al., 2026; Hübotter et al., 2026; Penaloza
+et al., 2026). Ye et al. (2026) further generalize this setting by allowing the context-conditioned teacher and
+2
+
+Toward Robust Internalization in On-Policy Distillation
+the student to be instantiated by models of different sizes. Zhao et al. (2026b) extend this idea by treating the
+reasoning harness itself as privileged context to be distilled. For a broader discussion of OPD and its variants,
+we refer readers to Song & Zheng (2026).
+Analysis and Extensions of On-Policy Distillation. A growing body of work analyzes the mechanisms
+underlying on-policy distillation. For example, Li et al. (2026b) identify conditions governing its success and
+failure, while Fu et al. (2026) catalog three failure modes of sampled-token OPD. Kaur et al. (2026) study how
+privileged-context distillation affects the context-free performance of thinking models, identifying performance
+degradation under long reasoning budgets. Complementary to these analyses, several recent works combine
+on-policy self-distillation with reinforcement learning from verifiable rewards (Yang et al., 2026; Li et al.,
+2026a) to further improve training efficiency and reasoning performance. Our focus is orthogonal to both
+lines of work: rather than explaining when OPD succeeds, diagnosing its training failures, or improving its
+optimization signal, we study what happens after privileged context has been successfully internalized and
+is subsequently reintroduced. We show that privileged fidelity alone is insufficient for robust internalization
+without explicitly promoting context invariance.
+Consistency Regularization. Consistency regularization encourages a model to produce similar outputs
+across different input views that shall preserve the same target behavior (Berthelot et al., 2019; Sohn et al.,
+2020). Recent applications include robustness to paraphrased instructions (Zhao et al., 2024), self-rewarding
+alignment (Wang et al., 2025) in LLMs, and idempotent knowledge retention in continual learning (Liu
+et al., 2026). These works enforce consistency across diverse perturbations and aspects of model behavior.
+In contrast, we apply this principle to the context-free and context-conditioned views of a distilled student,
+directly promoting stability under context reintroduction.
+3. Problem Formulation
+Consider a student model 𝑔
+𝜃 
+parameterized by 𝜃, an input 𝑥, and a fixed privileged context 𝑐 (e.g., a system
+prompt, task hint, or game-state scaffold).
+1 
+We denote the two student views as 𝑞
+𝑥 
+≜ 𝑔
+𝜃 
+( 𝑦 | 𝑥) and 𝑞
+𝑥,𝑐 
+≜
+𝑔
+𝜃 
+( 𝑦 | 𝑥, 𝑐). On-policy distillation with privileged context (Ye et al., 2026) trains the student by minimizing:
+L
+OPD 
+= 𝔼
+𝑥∼D 
+[
+KL
+(
+𝑞
+𝑥 
+∥ 
+𝑓 ( 𝑦 | 𝑥, 𝑐))]
+ 
+, (1)
+where 𝑓 ( 𝑦 | 𝑥, 𝑐) is the teacher distribution. In practice, the KL is computed at the token level and summed
+over the sequence.
+−15% −10% −5% 0% 5% 10% 15% 20%
+Accuracy Drop
+0%
+10%
+20%
+30%
+40%
+Harm Rate
+Regime A
+Regime B
+Regime C
+Figure 2 | Regimes of context reintroduction after
+OPD. x-axis: accuracy drop upon context reintro-
+duction; y-axis: Harm rate.
+Note that Equation (1) only constrains 𝑞
+𝑥 
+. The context-
+conditioned view 𝑞
+𝑥,𝑐 
+receives no learning signal and is not
+directly constrained. We argue that a necessary property for
+successful internalization is context invariance: if the model has
+truly absorbed 𝑐 into its parameters, conditioning on 𝑐 becomes
+redundant and the two views shall agree, i.e., 𝑞
+𝑥 
+≈ 𝑞
+𝑥,𝑐
+. Although
+one might expect a sufficiently expressive model to satisfy this
+property after training, we find that this is not the case in the
+majority of settings.
+Three regimes of context interaction. We evaluate OPD
+across 14 configurations spanning various model families and
+three task domains: system-prompt following, Text Games, and
+Mathematical Reasoning. Figure 2 plots each configuration by
+the accuracy drop induced by context reintroduction, Acc
+𝑥 
+−Acc
+𝑥,𝑐
+, against context harm, Harm = 𝑃(𝑞
+𝑥,𝑐 
+wrong |
+𝑞
+𝑥 
+correct)
+, which measures how often context overturns a correct no-context prediction. Three regimes emerge.
+In Regime A (8/14 configurations), context acts as a harmful perturbation: although the student already
+performs well without it, reintroducing it causes both an accuracy drop and a high harm rate. In Regime
+1
+Because 𝑐 is given and fixed for each task, the KL in Equation (1) contains no irreducible entropy term (Yang et al., 2026). Yet even in
+this favorable setting, optimizing privileged fidelity alone does not guarantee context invariance.
+3
+
+Toward Robust Internalization in On-Policy Distillation
+B, context remains a useful scaffold, suggesting incomplete internalization. In Regime C, the accuracy gap
+between the two views is small and context harm is minimal. Crucially, Regime A is the dominant pattern,
+covering more than half of all configurations. This shows that context-induced degradation is not an isolated
+failure case, but a recurring limitation of standard OPD, motivating the explicit promotion of context invariance.
+4. Method: No-Context Anchoring
+In this section, we first formalize a novel objective, view-robust internalization risk, that captures both privileged
+fidelity and context invariance. We then show that exact minimization of this risk implies context invariance,
+whereas indirect teacher matching may not reliably realize it under approximate optimization. Finally, we
+propose No-Context Anchoring (NCA), a regularizer that directly promotes cross-view consistency while
+preserving the OPD objective. The full procedure is summarized in Algorithm 1.
+4.1. View-Robust Internalization Risk
+First, we introduce the view-robust internalization risk. Let 𝑥 be the input, 𝑦 the output, and 𝑐 the privileged
+context. Let 𝑇
+𝑐 
+≜ 𝑓 ( 𝑦 | 𝑥, 𝑐) denote the teacher conditioned on 𝑐. At deployment, the student may or may not
+receive the context. We model this with a Bernoulli view variable 𝑉 ∼ Bernoulli( 𝑝
+𝑣
+) ≜ 𝜋
+𝑉 
+, 𝑝
+𝑣 
+∈ (0, 1), and
+define the two student views
+𝑄
+𝜃 
+( 𝑦 | 𝑥, 𝑣) ≜
+(
+𝑔
+𝜃 
+( 𝑦 | 𝑥) 𝑣 = 0,
+𝑔
+𝜃 
+( 𝑦 | 𝑥, 𝑐) 𝑣 = 1. 
+(2)
+Then the joint distribution of the view and output is 𝑃
+𝜃 
+(𝑣, 𝑦|𝑥) = 𝜋
+𝑉 
+(𝑣)𝑄
+𝜃 
+( 𝑦|𝑥, 𝑣). For notational convenience,
+write 𝑞
+𝑥 
+≜ 𝑔
+𝜃 
+(· | 𝑥) and 𝑞
+𝑥,𝑐 
+≜ 𝑔
+𝜃 
+(· | 𝑥, 𝑐).
+If the student has truly internalized the privileged information, its output shall not depend on whether 𝑐 is
+present. The ideal joint distribution is therefore 𝑃
+𝑇 
+(𝑣, 𝑦 | 𝑥) = 𝜋
+𝑉 
+(𝑣) 𝑇
+𝑐 
+( 𝑦), and we measure the gap via
+Definition 4.1 (View-robust internalization risk).
+R (𝜃; 𝑝
+𝑣
+) ≜ 𝔼
+𝑥∼D 
+KL
+(
+𝑃
+𝜃 
+(𝑉, 𝑌 | 𝑥) ∥
+ 
+𝑃
+𝑇 
+(𝑉, 𝑌 | 𝑥))
+ 
+. (3)
+Expanding Equation (3) yields
+R (𝜃; 𝑝
+𝑣
+) = (1 − 𝑝
+𝑣
+) 𝔼
+𝑥∼D 
+KL(𝑞
+𝑥 
+∥𝑇
+𝑐
+) + 𝑝
+𝑣 
+𝔼
+𝑥∼D 
+KL(𝑞
+𝑥,𝑐 
+∥𝑇
+𝑐
+). (4)
+The first term is precisely the standard OPD objective. The full risk adds a second, symmetric term that requires
+the context-conditioned view to also match the teacher. We refer to this joint objective as DualOPD. Then,
+any parameter 𝜃
+∗ 
+that achieves R (𝜃
+∗
+; 𝑝
+𝑣
+) = 0 satisfies 𝑞
+𝑥 
+= 𝑞
+𝑥,𝑐 
+= 𝑇
+𝑐 
+for D-almost every 𝑥. Therefore, context
+invariance (i.e., 𝑞
+𝑥 
+= 𝑞
+𝑥,𝑐
+) is a necessary condition for the view-robust optimum.
+4.2. The Need for Direct Invariance Optimization
+Although DualOPD directly minimizes R, context invariance is a consequence of exact minimization but is not
+explicitly enforced during optimization. In practice, with finite model capacity, limited optimization steps, and
+top-𝑘 logit truncation, the two teacher-matching terms may each reach small values without guaranteeing that
+𝑞
+𝑥 
+and 𝑞
+𝑥,𝑐 
+converge to the same solution. In particular, when 𝑇
+𝑐 
+is multi-modal, each view can approximate 𝑇
+𝑐
+by concentrating on different modes, both achieving small divergence from the teacher while remaining far
+apart from each other.
+Our ablation study (Section 5.4) confirms this empirically: DualOPD suffers a severe early Acc
+𝑥,𝑐 
+crash and
+learns Acc
+𝑥 
+most slowly among all methods, consistent with the two views diverging under approximate
+optimization despite both tracking the teacher. This motivates a formulation that directly promotes context
+invariance rather than relying on it to emerge as a side effect of exact teacher matching.
+4
+
+Toward Robust Internalization in On-Policy Distillation
+4.3. No-Context Anchoring
+Therefore, we preserve the OPD objective for privileged fidelity while adding an explicit context-invariance
+constraint:
+P : min
+𝜃 
+L
+OPD 
+(𝜃) s.t. 𝔼
+𝑥∼D
+
+𝐷(𝑞
+𝑥 
+, 𝑞
+𝑥,𝑐
+)
+ 
+≤ 𝜀, (5)
+where 𝐷 is a divergence between the two views. In practice, we relax this into a penalized form with a fixed
+weight 𝛽 > 0:
+L = L
+OPD 
++ 𝛽 𝔼
+𝑥∼D
+
+𝐷(𝑞
+𝑥 
+, 𝑞
+𝑥,𝑐
+)
+ 
+. (6)
+The divergence 𝐷 in Equation (6) can take many forms. We choose the forward KL divergence 𝐷 = KL(𝑞
+𝑥 
+∥𝑞
+𝑥,𝑐
+),
+which is mode-covering and thus prevents 𝑞
+𝑥,𝑐 
+from collapsing modes of 𝑞
+𝑥 
+. An additional benefit is that the
+expectation falls under 𝑞
+𝑥 
+, allowing us to reuse the on-policy samples already generated by OPD without a
+separate rollout from 𝑞
+𝑥,𝑐
+. To further avoid the gradient of this term interfering with the OPD objective through
+𝑞
+𝑥 
+, we apply a stop-gradient to anchor the no-context view. We call the resulting regularizer No-Context
+Anchoring (NCA):
+L
+NCA 
+≜ KL
+(
+sg
+[
+𝑔
+𝜃 
+(· | 𝑥)] ∥
+ 
+𝑔
+𝜃 
+(· | 𝑥, 𝑐))
+ 
+, (7)
+where sg[·] denotes the stop-gradient operator.
+The stop-gradient prevents L
+NCA 
+from backpropagating through the 𝑞
+𝑥 
+branch, preserving the no-context
+output as a reference within each update. Minimizing the NCA regularizer directly penalizes cross-view
+disagreement: KL(𝑞
+𝑥 
+∥𝑞
+𝑥,𝑐
+) = 0 if and only if 𝑞
+𝑥 
+= 𝑞
+𝑥,𝑐
+. In contrast, DualOPD promotes context invariance only
+indirectly through separate teacher matching, which, as discussed in Section 4.2, can leave 𝑞
+𝑥 
+and 𝑞
+𝑥,𝑐 
+far apart
+under approximate optimization. We compare against alternative divergence choices in our design analysis
+(Section 5.4).
+4.4. Bound Analysis
+The NCA regularizer provides a quantitative connection to context-induced behavior change. For any task-
+relevant event 𝐴
+𝑥 
+associated with input 𝑥 (e.g., answering correctly), NCA upper-bounds the probability change
+caused by context reintroduction. Concretely, by the definition of total variation, Pinsker’s inequality, and
+Jensen’s inequality:
+𝔼
+𝑥∼D 
+|𝑞
+𝑥,𝑐 
+( 𝐴
+𝑥 
+) − 𝑞
+𝑥 
+( 𝐴
+𝑥 
+)| ≤ 𝔼
+𝑥∼D
+
+TV(𝑞
+𝑥,𝑐
+, 𝑞
+𝑥 
+)
+ 
+≤ 𝔼
+𝑥∼D
+√︃
+1
+2 
+KL(𝑞
+𝑥 
+∥𝑞
+𝑥,𝑐
+)
+
+≤
+√︃
+ 
+1
+2 
+𝔼
+𝑥∼D
+
+KL(𝑞
+𝑥 
+∥𝑞
+𝑥,𝑐
+)
+ 
+≤
+√︃
+ 
+𝜀
+2 
+.
+Remark 4.2. If there exists 𝜃
+∗ 
+such that 𝑔
+𝜃
+∗ 
+(· | 𝑥) = 𝑔
+𝜃
+∗ 
+(· | 𝑥, 𝑐) = 𝑇
+𝑐 
+for D-a.e. 𝑥, both DualOPD and NCA
+achieve the zero-loss solution. That is, NCA does not sacrifice the expressiveness of the view-robust objective.
+The practical difference is that DualOPD relies on context invariance emerging as a side effect of exact teacher
+matching, whereas NCA directly enforces it, making it more robust under finite optimization.
+4.5. Computational Cost
+The only additional cost of NCA is one forward pass per training step for 𝑞
+𝑥,𝑐 
+= 𝑔
+𝜃 
+(· | 𝑥, 𝑐). Specifically, the
+sg[𝑞
+𝑥 
+] logits are detached from the forward pass that OPD already performs, and the on-policy sequences from
+OPD are reused to evaluate L
+NCA 
+without a separate rollout.
+5. Experiments
+We evaluate No-Context Anchoring (NCA) across 14 configurations spanning three domains (System-Prompt
+QA, Text Games, and Mathematical reasoning), five tasks, and six models, aiming to answer: (i) How prevalent
+and severe is context-induced degradation across tasks and model families, and can NCA mitigate it without
+sacrificing no-context performance? (ii) How do the choice of divergence and the regularization strength 𝛽
+affect NCA’s performance? (iii) What mechanisms underlie NCA’s effect on the model’s internal representations?
+(iv) How robust is NCA across model scales, cross-domain shifts, and variable privileged contexts?
+5
+
+Toward Robust Internalization in On-Policy Distillation
+Algorithm 1 OPD with No-Context Anchoring (NCA)
+Require: Dataset D, student 𝑔
+𝜃
+, teacher 𝑓 , context 𝑐, weight 𝛽
+1: for each batch {𝑥
+𝑖 
+} ∼ D do
+2: Sample 𝑦
+𝑖 
+∼ 𝑔
+𝜃 
+(· | 𝑥
+𝑖
+) (on-policy rollout)
+3: L
+OPD 
+← 
+1
+| B |
+Í
+𝑖
+Í
+𝑡 
+KL
+
+𝑔
+𝜃 
+(· | 𝑥
+𝑖
+, 𝑦
+𝑖,<𝑡 
+) 
+𝑓 (· | 𝑥
+𝑖
+, 𝑐, 𝑦
+𝑖,<𝑡 
+)
+
+4: L
+NCA 
+← 
+1
+| B |
+Í
+𝑖
+Í
+𝑡 
+KL
+
+sg
+
+𝑔
+𝜃 
+(· | 𝑥
+𝑖
+, 𝑦
+𝑖,<𝑡 
+)
+ 
+𝑔
+𝜃 
+(· | 𝑥
+𝑖
+, 𝑐, 𝑦
+𝑖,<𝑡 
+)
+
+5: Update 𝜃 via ∇
+𝜃 
+(L
+OPD 
++ 𝛽 · L
+NCA
+)
+6: end for
+5.1. Experimental Setup
+Tasks. Our experiments cover three types of tasks. System-Prompt QA: the privileged context is a task-specific
+system prompt available to the teacher but intended to be internalized by the student. We use MedMCQA (Pal
+et al., 2022), a medical multiple-choice QA dataset with 500 test samples, and a Safety dataset combining
+TweetEval (Barbieri et al., 2020), HateCheck (Röttger et al., 2021), and ETHOS (Mollas et al., 2022) for
+harmful-content classification, with 498 test samples. Text Games: the privileged context is a game-state
+scaffold, such as hints about the optimal move. We use Sokoban (6 × 6 grid, one box; spatial reasoning) and
+FrozenLake (3 × 3 grid, two holes; navigation) from TextArena (Guertler et al., 2025), both with a maximum of
+five game steps. Mathematical reasoning: the privileged context provides general problem-solving guidance,
+such as first identifying the problem type and planning an appropriate solution strategy. We use DAPO-Math-
+17K (Yu et al., 2025) with 1, 000 test samples. All training and test datasets, data splits, and text-game
+configurations follow Ye et al. (2026).
+Models. For System-Prompt QA, we evaluate four models: Llama-3.1-8B-Instruct (Grattafiori et al., 2024),
+Llama-3.2-3B-Instruct (Grattafiori et al., 2024), Qwen2.5-7B-Instruct (Qwen et al., 2025), and Qwen3-8B (Yang
+et al., 2025) (no-thinking mode), each serving as both teacher and student. For Text Games, Qwen3-4B-
+Instruct-2507 (Yang et al., 2025) serves as the teacher, with the same model as the student for self-distillation
+and Qwen3-1.7B (Yang et al., 2025) (no-thinking mode) for cross-model distillation. For Mathematical
+Reasoning, we use Qwen3-1.7B and Qwen3-8B with thinking mode, each serving as both teacher and student.
+Training. We use full-parameter fine-tuning with a learning rate of 5 × 10
+−6 
+for 100 steps on System-Prompt
+QA and Text Games, and 90 steps on Mathematical Reasoning due to its smaller training set. The batch size for
+System-Prompt QA and Mathematical Reasoning is 128, and for Text Games is 64. We set 𝛽 = 0.5 for all settings
+except Qwen3-4B-Instruct-2507→Qwen3-1.7B in Text Games where we use 𝛽 = 0.1. For System-Prompt QA,
+we use MetaSPO (Choi et al., 2025) to optimize suitable system prompts for each base model. For Text Games
+and Mathematical Reasoning, we construct the privileged context using the experience templates from Ye et al.
+(2026): scenario-specific gameplay guidance for each text game and general problem-solving guidance for
+math. The system prompts and experiences are provided in Appendix A. The maximum response length is 512
+tokens for System-Prompt QA, 1024 tokens for Text Games, and 16, 384 tokens for Mathematical Reasoning.
+Evaluation. We evaluate every 10 training steps under both views (no context and context reintroduced)
+using the following metrics:
+• Acc
+𝑥 
+/ WR
+𝑥 
+and Acc
+𝑥,𝑐 
+/ WR
+𝑥,𝑐
+: task performance (accuracy for QA, win rate for games) under the
+no-context and context-reintroduced views, respectively.
+• Harm: conditional probability of context flipping a correct prediction to incorrect, i.e., 𝑃(𝑞
+𝑥,𝑐 
+wrong |
+𝑞
+𝑥 
+correct).
+• BothCorrect / BothWon: fraction of instances correct (or games won) under both views.
+For System-Prompt QA, we use greedy decoding and evaluate on the full test set. For Text Games, we evaluate
+on 128 game instances, each with a single stochastic rollout (𝜏=0.7, top-𝑝=0.8, top-𝑘=20). For Mathematical
+Reasoning, we evaluate with 20 sampled response per test sample (𝜏=0.6, top-𝑝=0.95, top-𝑘=20). We report
+the average performance over the final three checkpoints. Throughout the experiments, we use OPD to refer
+6
+
+Toward Robust Internalization in On-Policy Distillation
+specifically to on-policy distillation with privileged context. Our baseline is implemented based on the codebase
+of Ye et al. (2026).
+Implementation. Our code is built on top of the codebase of Ye et al. (2026), using veRL (Sheng et al.,
+2025) as the training engine with FSDP for distributed training and vLLM (Kwon et al., 2023) for on-policy
+rollout generation. All KL divergences are computed over the top-𝑘=256 logits with renormalization to prevent
+reward hacking from low-probability tokens. All experiments are conducted on a single server equipped with
+8×NVIDIA H100 GPUs.
+5.2. Evaluation Results
+Figure 3 provides a bird’s-eye view of NCA’s effect across all 14 settings. Under OPD (left), Regime A points are
+scattered in the high-harm, high-accuracy-drop region. After applying NCA (right), most points move toward
+the origin, indicating that NCA broadly reduces context-induced degradation across diverse models and tasks.
+−10% 0% 10% 20%
+Accuracy Drop
+0%
+10%
+20%
+30%
+40%
+OPD
+−10% 0% 10% 20%
+Accuracy Drop
+NCA
+Regime A
+Regime B
+Regime C
+Harm Rate
+Figure 3 | Overall effect of NCA across all 14 settings. Left: OPD. Right: NCA. Each point is one (model, task) setting,
+colored by regime. NCA moves most points toward the origin, reducing both accuracy drop and harm rate.
+5.2.1 System-Prompt QA
+Table 1 | System-Prompt QA results on MedMCQA and Safety. All metrics are reported in %. The better result between
+OPD and NCA is shown in bold for each metric. Values are averaged over the final three checkpoints.
+MedMCQA Safety
+Model Method Acc
+𝑥 
+↑ Acc
+𝑥,𝑐 
+↑ Harm↓ BothCorrect↑ Acc
+𝑥 
+↑ Acc
+𝑥,𝑐 
+↑ Harm↓ BothCorrect↑
+Llama-3.1-8B-Ins
+Base 65.8 79.2 – – 74.1 77.5 – –
+OPD 77.1 75.0 10.8 68.8 75.3 74.2 7.5 69.7
+NCA (Ours) 78.0 77.9 4.0 74.9 76.4 76.6 4.2 73.2
+Llama-3.2-3B-Ins
+Base 60.0 73.2 – – 60.8 74.1 – –
+OPD 74.8 65.3 15.7 63.1 73.8 77.5 4.8 70.3
+NCA (Ours) 74.7 75.3 1.6 73.5 74.4 74.4 2.0 72.9
+Qwen2.5-7B-Ins
+Base 51.4 61.4 – – 66.9 75.7 – –
+OPD 58.9 63.8 11.8 51.9 73.3 72.2 7.4 67.9
+NCA (Ours) 62.5 61.8 7.6 57.7 74.5 74.8 2.8 72.4
+Qwen3-8B
+†
+Base 71.2 71.4 – – 79.3 79.9 – –
+OPD 69.3 70.4 3.7 66.8 78.5 78.2 5.5 74.2
+NCA (Ours) 69.9 70.7 2.4 68.3 79.2 78.9 3.3 76.6
+†
+No-thinking mode.
+Table 1 reveals two main findings.
+Context-induced degradation is widespread. Under standard OPD, all eight settings exhibit non-trivial
+context harm. The most severe case is Llama-3.2-3B on MedMCQA, where Harm reaches 15.7% and Acc
+𝑥,𝑐 
+falls
+7
+
+Toward Robust Internalization in On-Policy Distillation
+Table 2 | Text Games results on Sokoban and FrozenLake. All metrics are reported in %. The better result between OPD
+and NCA is shown in bold for each metric. Values are averaged over the final three checkpoints.
+Sokoban FrozenLake
+Model Method WR
+𝑥 
+↑ WR
+𝑥,𝑐 
+↑ Harm↓ BothWon↑ WR
+𝑥 
+↑ WR
+𝑥,𝑐 
+↑ Harm↓ BothWon↑
+Qwen3-4B-Ins (self)
+Base 5.5 43.0 – – 65.6 75.8 – –
+OPD 51.8 40.6 22.1 40.4 63.8 52.6 41.2 37.8
+NCA (Ours) 51.3 50.5 8.1 47.1 69.5 65.4 19.7 53.4
+Qwen3-4B-Ins→1.7B
+†
+Base 27.3 27.3 – – 0.0 10.9 – –
+OPD 51.0 32.8 35.7 32.8 73.4 86.5 5.6 69.3
+NCA (Ours) 52.6 53.6 2.4 51.3 74.5 70.1 13.3 64.3
+†
+No-thinking mode.
+9.5 points below Acc
+𝑥 
+. Even Qwen3-8B, whose base model performs similarly under the two views, exhibits a
+non-trivial harm rate of 5.5% after OPD on Safety, showing that strong initial performance alone does not
+ensure robustness to context reintroduction.
+NCA consistently improves robustness. NCA reduces Harm and improves BothCorrect in all eight settings,
+while also improving Acc
+𝑥 
+in seven of eight. The most pronounced improvement occurs on Llama-3.2-3B
+MedMCQA, where Harm decreases by 14.1 percentage points and BothCorrect increases by 10.4 points.
+Notably, although NCA directly regularizes the context-conditioned view, the frequent gains in Acc
+𝑥 
+suggest
+that promoting cross-view consistency may also facilitate better internalization. The only notable trade-off
+appears on Qwen2.5-7B MedMCQA, a Regime B setting in which context remains beneficial: NCA lowers Acc
+𝑥,𝑐
+by 2.0 points, but still improves Acc
+𝑥 
+by 3.6 points and reduces Harm by 4.2 points. This suggests that NCA
+can remain beneficial when internalization is incomplete, although stronger cross-view consistency may come
+at some cost to context-conditioned performance.
+5.2.2 Text Games
+Table 2 reports the Text Games results, where context-induced degradation is often more pronounced than in
+System-Prompt QA due to the sequential nature of the tasks.
+NCA improves robustness in most settings. Under standard OPD, three of the four settings exhibit substantial
+context harm, reaching 41.2% on self-distilled FrozenLake and 35.7% on cross-model Sokoban. NCA markedly
+reduces Harm and improves BothWon in all three cases. In particular, on cross-model Sokoban, NCA reduces
+Harm from 35.7% to 2.4% while improving both WR
+𝑥 
+and WR
+𝑥,𝑐
+. These results show that NCA generally
+remains effective under both self-distillation and cross-model distillation in sequential decision-making tasks.
+Boundary case. Cross-model FrozenLake is the only setting in which NCA increases Harm. This is also a
+Regime B case that retains a strong benefit from context under OPD, with WR
+𝑥,𝑐 
+= 86.5% compared with
+WR
+𝑥 
+= 73.4%. Anchoring the context-conditioned view to the no-context output reduces this benefit, lowering
+WR
+𝑥,𝑐 
+by 16.4 points while improving WR
+𝑥 
+by only 1.1 points. This observation motivates a promising future
+direction: adapting the anchor to the degree of internalization rather than always fixing it to the no-context
+view. We examine the corresponding training dynamics in Section 5.3.
+5.2.3 Mathematical Reasoning
+Unlike System-Prompt QA and Text Games, Mathematical Reasoning is evaluated in thinking mode, producing
+substantially longer responses and thereby testing NCA over extended autoregressive trajectories. As shown in
+Table 3, context-induced degradation remains present: Qwen3-1.7B exhibits a high Harm rate despite similar
+aggregate accuracy under the two views. NCA improves both accuracies, reduces Harm by 1.6 percentage
+points, and increases BothCorrect by 1.2 points. For Qwen3-8B, a Regime B setting in which context remains
+beneficial, NCA improves Acc
+𝑥 
+by 0.6 percentage points and BothCorrect by 0.3 points while largely preserving
+overall performance, suggesting its benefit even when internalization remains incomplete.
+8
+
+Toward Robust Internalization in On-Policy Distillation
+Table 3 | Mathematical Reasoning results. All metrics are reported in %. The better result between OPD and NCA is shown
+in bold for each metric. Values are averaged over the final three checkpoints.
+Model Method Acc
+𝑥 
+↑ Acc
+𝑥,𝑐 
+↑ Harm↓ BothCorrect↑
+Qwen3-1.7B
+Base 60.6 63.4 – –
+OPD 61.7 61.6 15.9 51.9
+NCA (Ours) 62.0 62.0 14.3 53.1
+Qwen3-8B
+Base 75.8 78.9 – –
+OPD 77.4 78.4 7.1 71.9
+NCA (Ours) 78.0 77.8 7.5 72.2
+5.3. Training Dynamics
+0 20 40 60 80 100
+Training Steps
+64%
+68%
+72%
+76%
+80%
+Accuracy
+OPD w/o ctx
+OPD w/ ctx
+Ours w/o ctx
+Ours w/ ctx
+0 20 40 60 80 100
+Training Steps
+2%
+5%
+8%
+10%
+12%
+15%
+Ctx-Hurt Rate
+OPD Ours
+(a) Llama-3.1-8B-Instruct, MedMCQA (Regime A)
+0 20 40 60 80 100
+Training Steps
+0%
+15%
+30%
+45%
+60%
+Accuracy
+OPD w/o ctx
+OPD w/ ctx
+Ours w/o ctx
+Ours w/ ctx
+0 20 40 60 80 100
+Training Steps
+0%
+20%
+40%
+60%
+80%
+100%
+Ctx-Hurt Rate
+OPD Ours
+ (b) Qwen3-4B-Ins→1.7B, Sokoban (Regime A)
+0 20 40 60 80 100
+Training Steps
+0%
+20%
+40%
+60%
+80%
+Accuracy
+OPD w/o ctx
+OPD w/ ctx
+Ours w/o ctx
+Ours w/ ctx
+0 20 40 60 80 100
+Training Steps
+0%
+15%
+30%
+45%
+60%
+75%
+Ctx-Hurt Rate
+OPD Ours
+(c) Qwen3-4B-Ins→1.7B, FrozenLake (Regime B)
+0 20 40 60 80 100
+Training Steps
+76%
+78%
+80%
+81%
+82%
+Accuracy
+OPD w/o ctx
+OPD w/ ctx
+Ours w/o ctx
+Ours w/ ctx
+0 20 40 60 80 100
+Training Steps
+2%
+3%
+4%
+6%
+8%
+9%
+Ctx-Hurt Rate
+OPD Ours
+ (d) Qwen3-8B, Safety (Regime C)
+Figure 4 | Training dynamics across three regimes. (a–b): In Regime A, NCA closes the accuracy gap and reduces harm. (c):
+In Regime B, NCA trades some Acc
+𝑥,𝑐 
+for improved Acc
+𝑥 
+. (d): In Regime C, both methods behave similarly with low harm.
+To understand when and how NCA’s effect takes hold beyond the final metrics, we examine how the two views
+evolve over training. Figure 4 shows representative curves across the three regimes (complete curves for all 14
+settings are in Appendix B).
+In Regime A (Figure 4a–4b), OPD progressively improves Acc
+𝑥 
+but Acc
+𝑥,𝑐 
+stagnates or drops, widening the
+gap. NCA keeps the two views tightly coupled. On Llama-3.1-8B MedMCQA (Figure 4a), the gap narrows
+steadily from step 20 with Harm suppressed throughout. On Sokoban cross-model (Figure 4b), NCA prevents
+the sharp Harm spike that OPD exhibits in the first 30 steps. In Regime C (Figure 4d), Qwen3-8B Safety shows
+minimal differences, with both methods maintaining low Harm throughout, confirming that NCA does not
+hurt when the gap is already small.
+Regime B (Section 5.3) reveals a more nuanced dynamic. Under OPD, Harm spikes early, peaking at approxi-
+mately 70% around steps 20–30, but then declines sharply as both win rates improve and WR
+𝑥,𝑐 
+eventually
+surpasses WR
+𝑥 
+. It suggests that the student could stumble into a strong policy mode and is highly favored by
+the context-conditioned teacher. In contrast, NCA limits the early harm peak to below 30%, but converges
+to a higher final Harm and a lower WR
+𝑥,𝑐 
+than OPD. These could explain the anomalous results noted in
+Section 5.2.2.
+5.4. Ablation Study
+Figure 5 analyzes NCA on Llama-3.1-8B-Instruct with MedMCQA by comparing alternative alignment objectives,
+ablating its key design components, and varying the regularization strength 𝛽.
+9
+
+Toward Robust Internalization in On-Policy Distillation
+0 20 40 60 80 100
+65%
+70%
+75%
+80%
+Accuracy
+w/o ctx
+0 20 40 60 80 100
+w/ ctx
+Training Steps
+OPD DualOPD SymKL Ours
+(a) Alternative alignment objectives.
+0 20 40 60 80 100
+65%
+70%
+75%
+80%
+Accuracy
+w/o ctx
+0 20 40 60 80 100
+w/ ctx
+Training Steps
+OPD RevKL NoSG Ours
+ (b) NCA design choices.
+0 20 40 60 80 100
+65%
+70%
+75%
+80%
+Accuracy
+w/o ctx
+0 20 40 60 80 100
+w/ ctx
+Training Steps
+OPD 
+β = 1 β = 0.5 β = 0.1
+ (c) 𝛽 sensitivity.
+Figure 5 | Design choice analysis on Llama-3.1-8B-Instruct MedMCQA.
+Alternative alignment objectives. In Figure 5a, we compare NCA with two alternative objectives:
+• 
+DualOPD: Add a second teacher-matching term KL(𝑞
+𝑥,𝑐 
+∥ 𝑓 ( 𝑦 | 𝑥, 𝑐)) to the standard OPD objective,
+without directly aligning 𝑞
+𝑥 
+and 𝑞
+𝑥,𝑐
+.
+• SymKL: symmetrically aligns the two views via 
+1
+2 
+KL(sg[𝑞
+𝑥 
+] ∥𝑞
+𝑥,𝑐
+)+ 
+1
+2 
+KL(sg[𝑞
+𝑥,𝑐
+] ∥𝑞
+𝑥 
+), with each distribution
+stop-gradiented when serving as the reference.
+DualOPD exhibits the slowest improvement in Acc
+𝑥 
+and a severe early collapse in Acc
+𝑥,𝑐
+, which falls to
+approximately 66% at step 10 before gradually recovering. This instability supports our motivation that
+separately matching both views to the teacher does not directly control their mutual consistency. SymKL avoids
+the severe collapse of DualOPD and reaches competitive intermediate performance, but shows larger early
+fluctuations and lower final accuracy than NCA under both views. In contrast, NCA provides the strongest
+overall balance: it preserves competitive Acc
+𝑥 
+while maintaining high Acc
+𝑥,𝑐 
+throughout training and achieving
+the best final performance under both views. These results support directly anchoring the context-conditioned
+view to a stop-gradient no-context reference, rather than aligning both views independently to the teacher or
+symmetrically coupling the two views.
+NCA design choices. In Figure 5b, we compare NCA with two variants:
+• RevKL: Replace the forward KL divergence in NCA with reverse KL.
+• NoSG: Remove the stop-gradient from the no-context anchor 𝑞
+𝑥 
+.
+The full NCA achieves the strongest and most stable late-stage accuracy under both the context-free and
+context-conditioned views. RevKL initially follows a similar trajectory but degrades steadily after approximately
+30 training steps, eventually underperforming even OPD under both views. This behavior is consistent with
+the mode-seeking tendency of reverse KL, which may amplify discrepancies by concentrating on a subset of
+the anchor distribution, whereas forward KL more strongly penalizes probability mass supported by 𝑞
+𝑥 
+but
+omitted by 𝑞
+𝑥,𝑐
+. NoSG, by contrast, largely tracks OPD and fails to retain the gains of full NCA, suggesting that
+allowing both views to co-adapt weakens the role of 𝑞
+𝑥 
+as a stable reference. Together, these results show that
+both the forward-KL direction and the stop-gradient anchor are important for stable cross-view alignment.
+Sensitivity to 𝛽. In Figure 5c, we evaluate 𝛽 ∈ {0.1, 0.5, 1.0}. All three converge to similar Acc
+𝑥 
+but differ
+notably in Acc
+𝑥,𝑐 
+dynamics. 𝛽 = 0.1 is too weak to prevent early context-induced drift, causing Acc
+𝑥,𝑐 
+to drop
+sharply to ∼70% at step 20 before slowly recovering. 𝛽 = 1.0 maintains high Acc
+𝑥,𝑐 
+but slightly hurts Acc
+𝑥 
+.
+𝛽 = 0.5 strikes the best balance, with its advantage over OPD becoming more pronounced in the later stages of
+training. Notably, all three 𝛽 values improve Acc
+𝑥,𝑐 
+over OPD by the end of training, suggesting that NCA’s
+benefit to context-conditioned performance is robust across a wide range of 𝛽.
+5.5. Mechanistic Case Study
+To probe how NCA affects the model internally, we analyze 16 randomly sampled Sokoban instances using
+Qwen3-4B-Instruct-2507, comparing the base model with the OPD and NCA checkpoints at step 100.
+10
+
+Toward Robust Internalization in On-Policy Distillation
+0 5 10 15 20 25 30 35
+Layer
+0.94
+0.95
+0.96
+0.97
+0.98
+0.99
+1.00
+Mean Per-Token Hidden-State Similarity
+Base
+OPD
+NCA
+(a) Per-layer cosine similarity between context and no-context hidden
+states.
+q_proj
+k_proj
+v_proj
+o_proj
+gate_proj
+up_proj
+down_proj
+norm.input
+norm.post_attn
+norm.other
+0
+5
+10
+15
+20
+25
+30
+35
+Layer
+OPD
+q_proj
+k_proj
+v_proj
+o_proj
+gate_proj
+up_proj
+down_proj
+norm.input
+norm.post_attn
+norm.other
+NCA
+−0.4
+−0.2
+0.0
+0.2
+0.4
+Grad Similarity
+(b) Per-layer gradient cosine similarity for OPD (left) and
+NCA (right).
+Figure 6 | Representation and gradient analysis on Qwen3-4B-Instruct-2507, Sokoban.
+k_proj
+o_proj
+q_proj
+v_proj
+down_proj
+gate_proj
+up_proj
+norm.input
+norm.other
+norm.post_attn
+0
+5
+10
+15
+20
+25
+30
+35
+Layer
+OPD vs Base
+k_proj
+o_proj
+q_proj
+v_proj
+down_proj
+gate_proj
+up_proj
+norm.input
+norm.other
+norm.post_attn
+NCA vs Base
+k_proj
+o_proj
+q_proj
+v_proj
+down_proj
+gate_proj
+up_proj
+norm.input
+norm.other
+norm.post_attn
+NCA vs OPD
+0.0000
+0.0005
+0.0010
+0.0015
+0.0020
+0.0025
+0.0030
+Relative Frobenius
+(a) Relative Frobenius norm ∥Δ𝑊 ∥
+𝐹 
+/∥𝑊
+base 
+∥
+𝐹 
+of parameter
+updates.
+0 5 10 15 20 25 30 35
+Layer
+0.2
+0.4
+0.6
+0.8
+Rank Ratio
+OPD
+Rank99 Ratio
+Effective-Rank Ratio
+0 5 10 15 20 25 30 35
+Layer
+NCA
+Rank99 Ratio
+Effective-Rank Ratio
+(b) Rank structure of parameter updates, normalized by the maximum
+possible rank.
+Figure 7 | Parameter-level analysis on Qwen3-4B-Instruct-2507, Sokoban.
+NCA substantially improves cross-view representation alignment. For each instance, we first generate a
+response 𝑦 without context and then process the same response tokens under the context-free and context-
+conditioned views. We compute the cosine similarity between their hidden states at each layer and average
+over response tokens and instances. As shown in Figure 6a, the base model exhibits increasing divergence from
+the middle layers onward, while OPD narrows but does not eliminate this gap. NCA maintains a similarity
+above approximately 0.997 across all layers, indicating substantially stronger representational alignment
+between the two views.
+OPD and NCA provide distinct optimization signals. We compute the cosine similarity between the gradients
+of L
+OPD 
+and L
+NCA 
+for each layer and parameter module. At the OPD checkpoint, the similarities are close to
+zero across most modules, showing that the consistency objective supplies update directions that are largely
+distinct from those of standard OPD. After joint training with NCA, the similarities become predominantly
+negative, revealing a local tension between privileged fidelity and cross-view consistency. These results suggest
+that NCA complements OPD by introducing an additional optimization signal rather than merely strengthening
+the original distillation objective.
+NCA redirects parameter updates without increasing their effective dimensionality. As shown in Figure 7a,
+the NCA–OPD differences concentrate in shallow-to-middle layers and projection modules, where their distance
+often exceeds either method’s distance from the base model. This geometry indicates that NCA redirects,
+rather than merely amplifies, the updates induced by OPD. Nevertheless, the two methods exhibit nearly
+identical rank profiles in Figure 7b, with high Rank99 ratios but much lower effective-rank ratios, reflecting
+similarly heavy-tailed spectra. Thus, NCA changes where and along which directions adaptation occurs without
+expanding its effective dimensionality, suggesting that its gains arise from reallocating existing update capacity
+rather than increasing update complexity.
+11
+
+Toward Robust Internalization in On-Policy Distillation
+5.6. Robustness Across Settings
+5.6.1 Effect of Student Model Size
+We examine whether NCA remains effective across different student model sizes. We keep the Qwen3-8B teacher
+fixed and vary the no-thinking student among Qwen3-1.7B, Qwen3-4B, and Qwen3-8B on the Safety task.
+1.7B 4B 8B
+Model Size
+78%
+80%
+82%
+84%
+HM Acc
+1.7B 4B 8B
+Model Size
+0%
+2%
+4%
+6%
+Harm
+1.7B 4B 8B
+Model Size
+74%
+76%
+78%
+80%
+82%
+84%
+Both Correct
+OPD NCA
+Figure 8 | Effect of student model size on Safety. HM Acc.
+is the harmonic mean of 𝐴𝑐𝑐
+𝑥 
+and 𝐴𝑐𝑐
+𝑥,𝑐 
+.
+As shown in Figure 8, NCA consistently mitigates context-
+induced degradation while slightly improving harmonic-
+mean accuracy across all student sizes. Interestingly,
+larger students exhibit higher context harm and lower
+both-view correctness, indicating that increased model
+capacity alone does not ensure robustness to context rein-
+troduction. To better understand this trend, we examine
+generation length and find that the average response
+length increases from 80 to 88 and 97 tokens for the
+1.7B, 4B, and 8B students, respectively. This observa-
+tion leads us to conjecture that longer generations allow
+discrepancies between the context-conditioned and no-
+context behaviors to accumulate over more autoregres-
+sive decoding steps. The systematic investigation of this hypothesis is left to future work.
+5.6.2 Cross-Domain Capability Retention
+0 20 40 60 80 100
+65%
+70%
+75%
+80%
+Acc
+x
+MedMCQA (ID)
+0 20 40 60 80 100
+Safety (OOD)
+Training Steps
+OPD NCA
+(a) Context-free accuracy Acc
+𝑥 
+.
+0 20 40 60 80 100
+68%
+70%
+73%
+75%
+78%
+80%
+Acc
+x
+,
+ 
+c
+MedMCQA (ID)
+0 20 40 60 80 100
+Safety (OOD)
+Training Steps
+OPD NCA
+ (b) Context-conditioned accuracy Acc
+𝑥,𝑐 
+.
+Figure 9 | Cross-domain capability retention for Llama-3.1-8B-Instruct trained on MedMCQA. The left and right panels
+report context-free and context-conditioned accuracy, respectively, on MedMCQA (in-domain, ID) and Safety (out-of-
+domain, OOD). NCA better preserves Safety accuracy under both views throughout training.
+We further examine whether NCA helps preserve capabilities outside the distillation domain. We train Llama-
+3.1-8B-Instruct on MedMCQA and evaluate it throughout training on both MedMCQA and the held-out Safety
+task, without further adaptation.
+As shown in Figure 9, NCA better preserves Safety accuracy under both the context-free and context-conditioned
+views throughout training. Under OPD, Safety performance degrades substantially as training proceeds,
+whereas NCA maintains markedly higher Acc
+𝑥 
+and Acc
+𝑥,𝑐 
+while retaining strong in-domain performance,
+suggesting an additional regularization benefit for preserving capabilities outside the distillation domain.
+5.6.3 Generalization to Harness-Based Context
+Our main formulation assumes that the privileged context is fixed within each task and shared across inputs.
+Recent work Zhao et al. (2026b) explores a different setting: the privileged context is a fixed harness that
+retrieves task-relevant information (e.g., similar examples) for each input. Although this setting falls outside
+our primary formulation, we examine whether NCA can still improve consistency between the context-free
+and context-conditioned views.
+12
+
+Toward Robust Internalization in On-Policy Distillation
+Table 4 | Results on USPTO chemical reaction type pre-
+diction. All metrics are reported in %. The better result
+between OPD and NCA is shown in bold for each metric.
+Values are averaged over the final three checkpoints.
+Method Acc
+𝑥 
+↑ Acc
+𝑥,𝑐 
+↑ Harm↓ BothCorrect↑
+Base 25.1 74.0 – –
+OPD 86.7 83.0 10.8 77.3
+NCA (Ours) 88.0 83.8 9.3 79.8
+Concretely, we apply NCA (𝛽 = 0.1) to the OPHSD
+pipeline on USPTO-50k (Schneider et al., 2016), a
+chemical reaction type prediction dataset, with Qwen3-
+8B under thinking mode. As shown in Table 4, NCA
+improves all four metrics, suggesting that it remains
+effective when the privileged context varies across in-
+puts and is structurally different from the fixed contexts
+used in our primary setting.
+5.7. Limitations
+We acknowledge several limitations of the current study. First, due to computational constraints, all experiments
+use a single training seed, and the mechanistic analysis is limited to one model–task configuration. Second,
+NCA always anchors the context-conditioned view to the no-context output, which may be suboptimal in
+Regime B settings where privileged context remains beneficial. A promising direction is to adapt the anchor
+or regularization strength according to the degree of internalization. Finally, our formulation focuses on
+token-level OPD for LLMs and may require adaptation to other distillation paradigms.
+6. Conclusion
+In this paper, we identify context-induced degradation, a counterintuitive phenomenon in on-policy distillation
+with privileged context, and introduce context invariance as a desirable property of robust internalization.
+We further formulate a novel view-robust internalization risk and propose NCA, a lightweight yet effective
+regularizer that promotes context invariance with only one additional forward pass per training step. Across 14
+configurations, NCA reduces context harm in 12 settings while preserving or improving no-context performance.
+Our findings highlight the need to evaluate privileged-context distillation not only by context-free performance,
+but also by robustness to context reintroduction.
+Acknowledgments
+We thank Tianzhu Ye for helpful discussions and guidance on using the released code for reproduction.
+References
+Agarwal, R., Vieillard, N., Zhou, Y., Stanczyk, P., Ramos Garea, S., Geist, M., and Bachem, O. On-policy
+distillation of language models: Learning from self-generated mistakes. In Kim, B., Yue, Y., Chaudhuri,
+S., Fragkiadaki, K., Khan, M., and Sun, Y. (eds.), International Conference on Learning Representations,
+volume 2024, pp. 21246–21263, 2024. URL https://proceedings.iclr.cc/paper_files/paper/
+2024/file/5be69a584901a26c521c2b51e40a4c20-Paper-Conference.pdf.
+Barbieri, F., Camacho-Collados, J., Espinosa Anke, L., and Neves, L. TweetEval: Unified benchmark and
+comparative evaluation for tweet classification. In Cohn, T., He, Y., and Liu, Y. (eds.), Findings of the
+Association for Computational Linguistics: EMNLP 2020, pp. 1644–1650, Online, November 2020. Association
+for Computational Linguistics. doi: 10.18653/v1/2020.findings-emnlp.148. URL https://aclanthology.
+org/2020.findings-emnlp.148/.
+Berthelot, D., Carlini, N., Goodfellow, I., Papernot, N., Oliver, A., and Raffel, C. Mixmatch: A holistic
+approach to semi-supervised learning. In Wallach, H., Larochelle, H., Beygelzimer, A., d'Alché-Buc,
+F., Fox, E., and Garnett, R. (eds.), Advances in Neural Information Processing Systems, volume 32. Cur-
+ran Associates, Inc., 2019. URL https://proceedings.neurips.cc/paper_files/paper/2019/file/
+1cd138d0499a68f4bb72bee04bbec2d7-Paper.pdf.
+Brown, T., Mann, B., Ryder, N., Subbiah, M., Kaplan, J. D., Dhariwal, P., Neelakantan, A., Shyam, P., Sastry, G.,
+Askell, A., Agarwal, S., Herbert-Voss, A., Krueger, G., Henighan, T., Child, R., Ramesh, A., Ziegler, D., Wu, J.,
+Winter, C., Hesse, C., Chen, M., Sigler, E., Litwin, M., Gray, S., Chess, B., Clark, J., Berner, C., McCandlish,
+S., Radford, A., Sutskever, I., and Amodei, D. Language models are few-shot learners. In Larochelle, H.,
+Ranzato, M., Hadsell, R., Balcan, M., and Lin, H. (eds.), Advances in Neural Information Processing Systems,
+13
+
+Toward Robust Internalization in On-Policy Distillation
+volume 33, pp. 1877–1901. Curran Associates, Inc., 2020. URL https://proceedings.neurips.cc/
+paper_files/paper/2020/file/1457c0d6bfcb4967418bfb8ac142f64a-Paper.pdf.
+Choi, Y., Baek, J., and Hwang, S. J. System prompt optimization with meta-learning. In Bel-
+grave, D., Zhang, C., Lin, H., Pascanu, R., Koniusz, P., Ghassemi, M., and Chen, N. (eds.),
+Advances in Neural Information Processing Systems, volume 38, pp. 55451–55488. Curran As-
+sociates, Inc., 2025. URL https://proceedings.neurips.cc/paper_files/paper/2025/file/
+5000f096bed9360a060d835c2a1703bb-Paper-Conference.pdf.
+DeepSeek-AI. Deepseek-v4: Towards highly efficient million-token context intelligence, 2026. URL https:
+//huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf.
+Dong, Q., Li, L., Dai, D., Zheng, C., Ma, J., Li, R., Xia, H., Xu, J., Wu, Z., Chang, B., Sun, X., Li, L., and Sui, Z.
+A survey on in-context learning. In Al-Onaizan, Y., Bansal, M., and Chen, Y.-N. (eds.), Proceedings of the
+2024 Conference on Empirical Methods in Natural Language Processing, pp. 1107–1128, Miami, Florida, USA,
+November 2024. Association for Computational Linguistics. doi: 10.18653/v1/2024.emnlp-main.64. URL
+https://aclanthology.org/2024.emnlp-main.64/.
+Fu, Y., Huang, H., Jiang, K., Liu, J., Jiang, Z., Zhu, Y., and Zhao, D. Revisiting on-policy distillation: Empirical
+failure modes and simple fixes. arXiv preprint arXiv:2603.25562, 2026.
+Grattafiori, A., Dubey, A., Jauhri, A., Pandey, A., Kadian, A., Al-Dahle, A., Letman, A., Mathur, A., Schelten, A.,
+Vaughan, A., et al. The llama 3 herd of models. arXiv preprint arXiv:2407.21783, 2024.
+Gu, Y., Dong, L., Wei, F., and Huang, M. Minillm: Knowledge distillation of large language models. In Kim, B.,
+Yue, Y., Chaudhuri, S., Fragkiadaki, K., Khan, M., and Sun, Y. (eds.), International Conference on Learning
+Representations, volume 2024, pp. 32694–32717, 2024. URL https://proceedings.iclr.cc/paper_
+files/paper/2024/file/8ac015d409635f196f9e3e9dcfb9a94e-Paper-Conference.pdf.
+Guertler, L., Cheng, B., Yu, S., Liu, B., Choshen, L., and Tan, C. Textarena. arXiv preprint arXiv:2504.11442,
+2025.
+Guo, D., Yang, D., Zhang, H., Song, J., Wang, P., Zhu, Q., Xu, R., Zhang, R., Ma, S., Bi, X., Zhang, X., Yu, X.,
+Wu, Y., Wu, Z. F., Gou, Z., Shao, Z., Li, Z., Gao, Z., Liu, A., Xue, B., Wang, B., Wu, B., Feng, B., Lu, C., Zhao,
+C., Deng, C., Ruan, C., Dai, D., Chen, D., Ji, D., Li, E., Lin, F., Dai, F., Luo, F., Hao, G., Chen, G., Li, G.,
+Zhang, H., Xu, H., Ding, H., Gao, H., Qu, H., Li, H., Guo, J., Li, J., Chen, J., Yuan, J., Tu, J., Qiu, J., Li, J.,
+Cai, J. L., Ni, J., Liang, J., Chen, J., Dong, K., Hu, K., You, K., Gao, K., Guan, K., Huang, K., Yu, K., Wang,
+L., Zhang, L., Zhao, L., Wang, L., Zhang, L., Xu, L., Xia, L., Zhang, M., Zhang, M., Tang, M., Zhou, M., Li,
+M., Wang, M., Li, M., Tian, N., Huang, P., Zhang, P., Wang, Q., Chen, Q., Du, Q., Ge, R., Zhang, R., Pan, R.,
+Wang, R., Chen, R. J., Jin, R. L., Chen, R., Lu, S., Zhou, S., Chen, S., Ye, S., Wang, S., Yu, S., Zhou, S., Pan,
+S., Li, S. S., Zhou, S., Wu, S., Yun, T., Pei, T., Sun, T., Wang, T., Zeng, W., Liu, W., Liang, W., Gao, W., Yu,
+W., Zhang, W., Xiao, W. L., An, W., Liu, X., Wang, X., Chen, X., Nie, X., Cheng, X., Liu, X., Xie, X., Liu, X.,
+Yang, X., Li, X., Su, X., Lin, X., Li, X. Q., Jin, X., Shen, X., Chen, X., Sun, X., Wang, X., Song, X., Zhou, X.,
+Wang, X., Shan, X., Li, Y. K., Wang, Y. Q., Wei, Y. X., Zhang, Y., Xu, Y., Li, Y., Zhao, Y., Sun, Y., Wang, Y., Yu,
+Y., Zhang, Y., Shi, Y., Xiong, Y., He, Y., Piao, Y., Wang, Y., Tan, Y., Ma, Y., Liu, Y., Guo, Y., Ou, Y., Wang, Y.,
+Gong, Y., Zou, Y., He, Y., Xiong, Y., Luo, Y., You, Y., Liu, Y., Zhou, Y., Zhu, Y. X., Huang, Y., Li, Y., Zheng,
+Y., Zhu, Y., Ma, Y., Tang, Y., Zha, Y., Yan, Y., Ren, Z. Z., Ren, Z., Sha, Z., Fu, Z., Xu, Z., Xie, Z., Zhang, Z.,
+Hao, Z., Ma, Z., Yan, Z., Wu, Z., Gu, Z., Zhu, Z., Liu, Z., Li, Z., Xie, Z., Song, Z., Pan, Z., Huang, Z., Xu, Z.,
+Zhang, Z., and Zhang, Z. DeepSeek-R1 incentivizes reasoning in LLMs through reinforcement learning.
+Nature, 645(8081):633–638, September 2025. ISSN 1476-4687. doi: 10.1038/s41586-025-09422-z. URL
+https://doi.org/10.1038/s41586-025-09422-z.
+Hinton, G., Vinyals, O., and Dean, J. Distilling the knowledge in a neural network. arXiv preprint
+arXiv:1503.02531, 2015.
+Hübotter, J., Lübeck, F., Behric, L. D., Baumann, A., Bagatella, M., Marta, D., Hakimi, I., Shenfeld, I., Buening,
+T. K., Guestrin, C., and Krause, A. Reinforcement learning via self-distillation. In Forty-third International
+Conference on Machine Learning, 2026. URL https://openreview.net/forum?id=QkfkxyRizZ.
+14
+
+Toward Robust Internalization in On-Policy Distillation
+Jin, W., Min, T., Yang, Y., Wei, D., Zhou, Y., Kadhe, S. R., Baracaldo, N., and Lee, K. Entropy-aware on-policy
+distillation of language models. In Forty-third International Conference on Machine Learning, 2026. URL
+https://openreview.net/forum?id=J5i09faOOf.
+Kaur, S., Ri, N., He, Y., Fowl, L. H., and Arora, S. Rethinking on-policy self-distillation for thinking models. In
+Workshop on Failure Modes of Agentic AI at ICML 2026, 2026. URL https://openreview.net/forum?id=
+ut5i6m8pAE.
+Ko, J., Kim, S., Chen, T., and Yun, S.-Y. DistiLLM: Towards streamlined distillation for large language models.
+In Salakhutdinov, R., Kolter, Z., Heller, K., Weller, A., Oliver, N., Scarlett, J., and Berkenkamp, F. (eds.),
+Proceedings of the 41st International Conference on Machine Learning, volume 235 of Proceedings of Machine
+Learning Research, pp. 24872–24895. PMLR, 21–27 Jul 2024. URL https://proceedings.mlr.press/
+v235/ko24c.html.
+Kwon, W., Li, Z., Zhuang, S., Sheng, Y., Zheng, L., Yu, C. H., Gonzalez, J. E., Zhang, H., and Stoica, I. Efficient
+memory management for large language model serving with pagedattention. In Proceedings of the ACM
+SIGOPS 29th Symposium on Operating Systems Principles, 2023.
+Li, G., Yang, T., Fang, J., Song, M., Zheng, M., Guo, H., Zhang, D., Wang, J., and Chua, T.-S. Unifying
+group-relative and self-distillation policy optimization via sample routing. arXiv preprint arXiv:2604.02288,
+2026a.
+Li, Y., Zuo, Y., He, B., Zhang, J., Xiao, C., Qian, C., Yu, T., ang Gao, H., Yang, W., Liu, Z., and Ding, N.
+Rethinking on-policy distillation of large language models: Phenomenology, mechanism, and recipe, 2026b.
+URL https://arxiv.org/abs/2604.13016.
+Liu, Z., Li, Y., Gao, H., Li, Y., Kong, L., Sun, L., and Huang, W. IDER: IDempotent experience replay for reliable
+continual learning. In The Fourteenth International Conference on Learning Representations, 2026. URL
+https://openreview.net/forum?id=Vr5f3kRvLD.
+Mollas, I., Chrysopoulou, Z., Karlos, S., and Tsoumakas, G. ETHOS: a multi-label hate speech detection
+dataset. Complex & Intelligent Systems, 8(6):4663–4678, December 2022. ISSN 2198-6053. doi: 10.1007/
+s40747-021-00608-2. URL https://doi.org/10.1007/s40747-021-00608-2.
+Ouyang, L., Wu, J., Jiang, X., Almeida, D., Wainwright, C., Mishkin, P., Zhang, C., Agarwal, S., Slama, K.,
+Ray, A., et al. Training language models to follow instructions with human feedback. Advances in neural
+information processing systems, 35:27730–27744, 2022.
+Pal, A., Umapathi, L. K., and Sankarasubbu, M. Medmcqa: A large-scale multi-subject multi-choice dataset
+for medical domain question answering. In Flores, G., Chen, G. H., Pollard, T., Ho, J. C., and Naumann, T.
+(eds.), Proceedings of the Conference on Health, Inference, and Learning, volume 174 of Proceedings of Machine
+Learning Research, pp. 248–260. PMLR, 07–08 Apr 2022. URL https://proceedings.mlr.press/v174/
+pal22a.html.
+Penaloza, E., Vattikonda, D., Gontier, N., Lacoste, A., Charlin, L., and Caccia, M. Privileged information
+distillation for language models. In Forty-third International Conference on Machine Learning, 2026. URL
+https://openreview.net/forum?id=ebZcMQImhG.
+Qwen, :, Yang, A., Yang, B., Zhang, B., Hui, B., Zheng, B., Yu, B., Li, C., Liu, D., Huang, F., Wei, H., Lin,
+H., Yang, J., Tu, J., Zhang, J., Yang, J., Yang, J., Zhou, J., Lin, J., Dang, K., Lu, K., Bao, K., Yang, K., Yu,
+L., Li, M., Xue, M., Zhang, P., Zhu, Q., Men, R., Lin, R., Li, T., Tang, T., Xia, T., Ren, X., Ren, X., Fan, Y.,
+Su, Y., Zhang, Y., Wan, Y., Liu, Y., Cui, Z., Zhang, Z., and Qiu, Z. Qwen2.5 technical report, 2025. URL
+https://arxiv.org/abs/2412.15115.
+Röttger, P., Vidgen, B., Nguyen, D., Waseem, Z., Margetts, H., and Pierrehumbert, J. HateCheck: Functional tests
+for hate speech detection models. In Zong, C., Xia, F., Li, W., and Navigli, R. (eds.), Proceedings of the 59th
+Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference
+on Natural Language Processing (Volume 1: Long Papers), pp. 41–58, Online, August 2021. Association for
+Computational Linguistics. doi: 10.18653/v1/2021.acl-long.4. URL https://aclanthology.org/2021.
+acl-long.4/.
+15
+
+Toward Robust Internalization in On-Policy Distillation
+Schneider, N., Stiefl, N., and Landrum, G. A. What’s what: The (nearly) definitive guide to reaction role
+assignment. Journal of chemical information and modeling, 56(12):2336–2346, 2016.
+Shenfeld, I., Damani, M., Hübotter, J., and Agrawal, P. Self-distillation enables continual learning. In Forty-
+third International Conference on Machine Learning, 2026. URL https://openreview.net/forum?id=
+qA6FgH0nnZ.
+Sheng, G., Zhang, C., Ye, Z., Wu, X., Zhang, W., Zhang, R., Peng, Y., Lin, H., and Wu, C. Hybridflow: A
+flexible and efficient rlhf framework. In Proceedings of the Twentieth European Conference on Computer
+Systems, EuroSys ’25, pp. 1279–1297, New York, NY, USA, 2025. Association for Computing Machinery. ISBN
+9798400711961. doi: 10.1145/3689031.3696075. URL https://doi.org/10.1145/3689031.3696075.
+Sohn, K., Berthelot, D., Carlini, N., Zhang, Z., Zhang, H., Raffel, C., Cubuk, E. D., Kurakin, A., and Li, C.-L.
+Fixmatch: Simplifying semi-supervised learning with consistency and confidence. In Larochelle, H., Ranzato,
+M., Hadsell, R., Balcan, M., and Lin, H. (eds.), Advances in Neural Information Processing Systems, volume 33,
+pp. 596–608. Curran Associates, Inc., 2020. URL https://proceedings.neurips.cc/paper_files/
+paper/2020/file/06964dce9addb1c5cb5d6e3d9838f733-Paper.pdf.
+Song, M. and Zheng, M. A survey of on-policy distillation for large language models. arXiv preprint
+arXiv:2604.00626, 2026.
+Wang, Z., He, W., Liang, Z., Zhang, X., Bansal, C., Wei, Y., Zhang, W., and Yao, H. Cream:
+Consistency regularized self-rewarding language models. In Yue, Y., Garg, A., Peng, N.,
+Sha, F., and Yu, R. (eds.), International Conference on Learning Representations, volume 2025,
+pp. 57017–57039, 2025. URL https://proceedings.iclr.cc/paper_files/paper/2025/file/
+8f9d459c19b59b5400ce396e0f8c23e0-Paper-Conference.pdf.
+Wei, J., Wang, X., Schuurmans, D., Bosma, M., ichter, b., Xia, F., Chi, E., Le, Q. V., and Zhou, D. Chain-of-
+thought prompting elicits reasoning in large language models. In Koyejo, S., Mohamed, S., Agarwal, A.,
+Belgrave, D., Cho, K., and Oh, A. (eds.), Advances in Neural Information Processing Systems, volume 35, pp.
+24824–24837. Curran Associates, Inc., 2022. URL https://proceedings.neurips.cc/paper_files/
+paper/2022/file/9d5609613524ecf4f15af0f7b31abca4-Paper-Conference.pdf.
+Xiao, B., Xia, B., Yang, B., Gao, B., Shen, B., Zhang, C., He, C., Lou, C., Luo, F., Wang, G., et al. Mimo-v2-flash
+technical report. arXiv preprint arXiv:2601.02780, 2026.
+Xu, X., Li, M., Tao, C., Shen, T., Cheng, R., Li, J., Xu, C., Tao, D., and Zhou, T. A survey on knowledge
+distillation of large language models. arXiv preprint arXiv:2402.13116, 2024.
+Yang, A., Li, A., Yang, B., Zhang, B., Hui, B., Zheng, B., Yu, B., Gao, C., Huang, C., Lv, C., et al. Qwen3
+technical report. arXiv preprint arXiv:2505.09388, 2025.
+Yang, C., Qin, C., Si, Q., Chen, M., Gu, N., Yao, D., Lin, Z., Wang, W., Wang, J., and Duan, N. Self-distilled rlvr.
+arXiv preprint arXiv:2604.03128, 2026.
+Ye, T., Dong, L., Wu, X., Huang, S., and Wei, F. On-policy context distillation for language models. arXiv
+preprint arXiv:2602.12275, 2026.
+Yu, Q., Zhang, Z., Zhu, R., Yuan, Y., Zuo, X., Yue, Y., Dai, W., Fan, T., Liu, G., liu, j., Liu, L., Liu, X., Lin, H., Lin,
+Z., Ma, B., Sheng, G., Tong, Y., Zhang, C., Zhang, M., Zhang, R., Zhang, W., Zhu, H., Zhu, J., Chen, J., Chen,
+J., Wang, C., Yu, H., Song, Y., Wei, X., Zhou, H., Liu, J., Ma, W.-Y., Zhang, Y.-Q., Yan, L., Wu, Y., and Wang,
+M. Dapo: An open-source llm reinforcement learning system at scale. In Belgrave, D., Zhang, C., Lin, H.,
+Pascanu, R., Koniusz, P., Ghassemi, M., and Chen, N. (eds.), Advances in Neural Information Processing Systems,
+volume 38, pp. 113222–113244. Curran Associates, Inc., 2025. URL https://proceedings.neurips.cc/
+paper_files/paper/2025/file/a4277440d50f1f15d2cb4c14f7e0c0d2-Paper-Conference.pdf.
+Zhao, S., Xie, Z., Liu, M., Huang, J., Pang, G., Chen, F., and Grover, A. Self-distilled reasoner: On-policy
+self-distillation for large language models. In Forty-third International Conference on Machine Learning,
+2026a. URL https://openreview.net/forum?id=Jpxfof0EaS.
+16
+
+Toward Robust Internalization in On-Policy Distillation
+Zhao, Y., Yan, L., Sun, W., Xing, G., Wang, S., Meng, C., Cheng, Z., Ren, Z., and Yin, D. Improving the
+robustness of large language models via consistency alignment. In Calzolari, N., Kan, M.-Y., Hoste, V., Lenci,
+A., Sakti, S., and Xue, N. (eds.), Proceedings of the 2024 Joint International Conference on Computational
+Linguistics, Language Resources and Evaluation (LREC-COLING 2024), pp. 8931–8941, Torino, Italia, May
+2024. ELRA and ICCL. URL https://aclanthology.org/2024.lrec-main.782/.
+Zhao, Z., Ma, L., and Zhang, W. Training with harnesses: On-policy harness self-distillation for complex
+reasoning. arXiv preprint arXiv:2605.08741, 2026b.
+17
+
+Toward Robust Internalization in On-Policy Distillation
+Appendix
+A Implementation Details 19
+A.1 System Prompts . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+A.2 Text Games Privileged Context . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+A.3 Mathematical Reasoning Privileged Context . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 21
+B Complete Training Curves 21
+18
+
+Toward Robust Internalization in On-Policy Distillation
+A. Implementation Details
+A.1. System Prompts
+We list the system prompts used as privileged context for each model and task. These prompts are optimized
+using MetaSPO (Choi et al., 2025) for each base model. The Llama system prompts are taken directly from
+Ye et al. (2026). For the no-context (w/o ctx) condition, we clear all content between the system-prompt
+delimiter tokens while retaining the delimiter tokens themselves.
+MedMCQA.
+Llama-3.1-8B / Llama-3.2-3B:
+You are a knowledgeable and analytical assistant specializing in medical topics. Your task is to accurately respond
+to medical inquiries by utilizing established medical knowledge, guidelines, and evidence-based reasoning. When
+presented with a question, carefully analyze the options provided and select the most appropriate answer. Ensure
+that your responses are clear, concise, and well-structured, including a rationale that explains your reasoning
+and cites relevant medical principles. Prioritize accuracy and logical coherence in all your responses.
+Qwen2.5-7B:
+You are a knowledgeable and helpful assistant who critically analyzes questions and evaluates candidate answers.
+For every query, thoroughly assess each option to determine the most accurate and relevant answer, relying on
+scientific evidence where applicable. Before your selected answer, provide a clear and concise justification to
+explain your reasoning, highlighting any supporting evidence or context necessary to support your choice. Then,
+always present your response in the specified format: <answer>Answer Here</answer>.
+Qwen3-8B:
+You are a helpful assistant.
+Safety.
+Llama-3.1-8B / Llama-3.2-3B:
+You are an analytical assistant. Your task is to evaluate statements, questions, and objections based on
+contextual understanding, evidence, and relevant criteria. When providing responses, please adhere to the
+following guidelines:
+1. Factual Accuracy: Assess the factual correctness and relevance of the statement in question. Provide context
+where necessary.
+2. Opinion vs. Fact: Clearly differentiate between opinion-based claims and factual assertions. Explain why a
+statement is considered an opinion or a fact.
+3. Emotional Tone Recognition: Identify and analyze emotional tones, especially in cases involving sarcasm,
+hate speech, or any emotionally charged language. Discuss the implications of tone in your assessment.
+4. Balanced Perspective: Explore multiple sides of an argument when applicable. Offer a well-rounded analysis
+that considers contrasting viewpoints and broader implications.
+5. Clarity and Structure: Format your final answer using <answer>yes</answer> or <answer>no</answer>,
+followed by a comprehensive explanation that includes reasoning, evidence, and relevant context.
+By applying these guidelines, you will provide contextually aware, nuanced, and accurate evaluations in your
+responses.
+Qwen2.5-7B:
+You are a thoughtful and analytical assistant. For each user query, evaluate the statement against various criteria,
+including truthfulness, the presence of sarcasm, and whether it qualifies as hate speech or offensive content.
+Consider context, intent, and societal implications in your analysis. Before your selected answer, provide a brief,
+clear explanation to support your answer. Then, provide your response in the format <answer>yes</answer>
+or <answer>no</answer>.
+19
+
+Toward Robust Internalization in On-Policy Distillation
+Qwen3-8B:
+You are a thoughtful and analytical assistant. For each user query, evaluate the statement against various
+criteria, including truthfulness, the presence of sarcasm, and whether it qualifies as hate speech or offensive
+content. Consider context, intent, and societal implications in your analysis. Provide your response in the format
+<answer>yes</answer> or <answer>no</answer>, and include a brief, clear explanation to support your
+answer.
+A.2. Text Games Privileged Context
+For Text Games, the privileged context is constructed using the experience template from Ye et al. (2026):
+You are an agent playing a game on a grid, acting as a reasoning engine.
+Your decisions are based on the experience you have learned about the game’s rules or strategies.
+This experience is only a guess of how the game works, and the rules and strategies may be incomplete or
+incorrect.
+Given experience for rules or strategies you have learned:
+{EXPERIENCES}
+We provide the teacher with the following game-specific experience items.
+Sokoban experience:
+- EXPERIENCE ITEM: In this Sokoban environment, ’P’ is the controllable player, ’X’ is a box, ’O’ is the
+box target, ’#’ is a wall, and ’_’ is empty floor. The task is to push ’X’ onto ’O’; ’P’ itself reaching ’O’ is not
+sufficient.
+- EXPERIENCE ITEM: A move into ’_’ is normal walking. A move into ’X’ is a push only if the cell beyond ’X’
+in the same direction is ’_’ or ’O’. A move into ’#’ is always illegal. The player can push boxes but cannot
+pull them.
+- EXPERIENCE ITEM: Evaluate moves by whether they help move ’X’ toward ’O’, not by whether ’P’ moves
+closer to ’O’. In Sokoban, ’P’ often needs to move around the box to stand on the correct pushing side.
+- EXPERIENCE ITEM: Before pushing ’X’, check the destination cell of the box. Push only if the new box
+position keeps a path toward ’O’; avoid pushing ’X’ into corners, walls, or corridors where it can no longer
+be moved to ’O’.
+- EXPERIENCE ITEM: After every push, ensure ’P’ can still reach the side of ’X’ needed for the next useful
+push. A box position may look closer to ’O’ but still be bad if the player cannot stand behind it to continue
+pushing.
+- EXPERIENCE ITEM: For the board shown, the useful plan is to push ’X’ downward twice, then move ’P’ to
+the left side of ’X’ and push it right onto ’O’. One valid action sequence is ’s, s, a, s, d’.
+FrozenLake experience:
+- EXPERIENCE ITEM: In Textgame-FrozenLake, ’P’ is the player, ’G’ is the goal, ’H’ is a hole or failure tile,
+and blank cells are safe movable spaces. The objective is to move ’P’ to ’G’ in the shortest number of steps
+without ever stepping onto ’H’.
+- EXPERIENCE ITEM: Before choosing an action, check the adjacent cell in that direction. Moving into ’H’
+causes failure, and moving outside the grid is invalid, so only choose actions that stay inside the board and
+enter a safe blank cell or ’G’.
+- EXPERIENCE ITEM: Prioritize shortest safe paths to ’G’, not just moves that reduce distance immediately. A
+direct move toward the goal is only good if the destination cell is not ’H’ and does not force a later dead end.
+- EXPERIENCE ITEM: Treat ’H’ tiles as absolute obstacles. Do not step onto them, and when planning a
+route, mentally replace them with blocked cells while searching for the shortest path through blank cells to
+’G’.
+- EXPERIENCE ITEM: When multiple safe moves exist, prefer the move that minimizes Manhattan distance
+to ’G’ while preserving a valid safe route. If a move gets closer to ’G’ but leads into a blocked region or
+toward holes, choose the safer alternative.
+- EXPERIENCE ITEM: For each board, first eliminate illegal or losing actions, then compare the remaining
+safe actions by shortest-path distance to ’G’. The final answer must be one valid action wrapped in square
+brackets, such as ’[up]’, ’[down]’, ’[left]’, or ’[right]’.
+20
+
+Toward Robust Internalization in On-Policy Distillation
+A.3. Mathematical Reasoning Privileged Context
+For Mathematical Reasoning, the privileged context is also constructed using the experience template from
+Ye et al. (2026). We provide the teacher with the following general problem-solving guidance as experience
+items:
+- EXPERIENCE ITEM: First identify the mathematical domain, given conditions, constraints, and the final
+integer answer being requested. Do not rush into calculation; first clarify exactly what the problem is asking
+for.
+- EXPERIENCE ITEM: Translate the problem into precise mathematical expressions before solving. Choose an
+appropriate method based on the problem type, such as defining variables, setting up equations, casework,
+modular arithmetic, recurrence, invariants, counting techniques, geometric relations, or relevant theorems.
+Avoid unsupported guessing and trial-and-error.
+- EXPERIENCE ITEM: Throughout the reasoning process, continuously check all constraints, including
+integrality, positivity or negativity, range, distinctness, order relations, boundary cases, overcounting,
+undercounting, and degenerate cases. Many wrong answers come from satisfying only part of the conditions
+while ignoring hidden constraints.
+- EXPERIENCE ITEM: Before giving the final answer, verify the result. This can be done by substituting it
+back into the original problem, checking small cases, comparing with bounds, or confirming that all cases
+are mutually exclusive and exhaustive. The final output should use a clean answer format, such as ‘Answer:
+123’ or ‘Answer: \ boxed{123}’, with no extra text after the final answer.
+B. Complete Training Curves
+We provide training curves of accuracy, harm rate, and both-view success for all 14 settings, grouped by regime.
+Each row shows one setting with three metrics.
+21
+
+Toward Robust Internalization in On-Policy Distillation
+0 20 40 60 80 100
+Training Steps
+64%
+68%
+72%
+76%
+80%
+Accuracy
+OPD w/o ctx
+OPD w/ ctx
+Ours w/o ctx
+Ours w/ ctx
+0 20 40 60 80 100
+Training Steps
+2%
+5%
+8%
+10%
+12%
+15%
+Ctx-Hurt Rate
+OPD Ours
+0 20 40 60 80 100
+Training Steps
+56%
+60%
+64%
+68%
+72%
+76%
+Both-Correct Rate
+OPD Ours
+(a) Llama-3.1-8B-Instruct, MedMCQA
+0 20 40 60 80 100
+Training Steps
+55%
+60%
+65%
+70%
+75%
+Accuracy
+OPD w/o ctx
+OPD w/ ctx
+Ours w/o ctx
+Ours w/ ctx
+0 20 40 60 80 100
+Training Steps
+0%
+8%
+16%
+24%
+32%
+Ctx-Hurt Rate
+OPD Ours
+0 20 40 60 80 100
+Training Steps
+48%
+54%
+60%
+66%
+72%
+Both-Correct Rate
+OPD Ours
+(b) Llama-3.2-3B-Instruct, MedMCQA
+0 20 40 60 80 100
+Training Steps
+72%
+74%
+76%
+78%
+80%
+Accuracy
+OPD w/o ctx
+OPD w/ ctx
+Ours w/o ctx
+Ours w/ ctx
+0 20 40 60 80 100
+Training Steps
+2%
+5%
+8%
+10%
+12%
+Ctx-Hurt Rate
+OPD Ours
+0 20 40 60 80 100
+Training Steps
+65%
+68%
+70%
+72%
+75%
+Both-Correct Rate
+OPD Ours
+(c) Llama-3.1-8B-Instruct, Safety
+0 20 40 60 80 100
+Training Steps
+65%
+68%
+70%
+72%
+75%
+78%
+Accuracy
+OPD w/o ctx
+OPD w/ ctx
+Ours w/o ctx
+Ours w/ ctx
+0 20 40 60 80 100
+Training Steps
+2%
+4%
+6%
+8%
+10%
+Ctx-Hurt Rate
+OPD Ours
+0 20 40 60 80 100
+Training Steps
+60%
+63%
+66%
+69%
+72%
+75%
+Both-Correct Rate
+OPD Ours
+(d) Qwen2.5-7B-Instruct, Safety
+Figure 10 | Regime A settings (part 1). NCA consistently closes the accuracy gap and reduces harm rate.
+22
+
+Toward Robust Internalization in On-Policy Distillation
+0 20 40 60 80 100
+Training Steps
+0%
+10%
+20%
+30%
+40%
+50%
+Accuracy
+OPD w/o ctx
+OPD w/ ctx
+Ours w/o ctx
+Ours w/ ctx
+0 20 40 60 80 100
+Training Steps
+8%
+16%
+24%
+32%
+40%
+Ctx-Hurt Rate
+OPD Ours
+0 20 40 60 80 100
+Training Steps
+0%
+10%
+20%
+30%
+40%
+50%
+Both-Correct Rate
+OPD Ours
+(a) Qwen3-4B-Instruct-2507 (self), Sokoban
+0 20 40 60 80 100
+Training Steps
+0%
+15%
+30%
+45%
+60%
+Accuracy
+OPD w/o ctx
+OPD w/ ctx
+Ours w/o ctx
+Ours w/ ctx
+0 20 40 60 80 100
+Training Steps
+0%
+20%
+40%
+60%
+80%
+100%
+Ctx-Hurt Rate
+OPD Ours
+0 20 40 60 80 100
+Training Steps
+0%
+10%
+20%
+30%
+40%
+50%
+Both-Correct Rate
+OPD Ours
+(b) Qwen3-4B-Ins→1.7B, Sokoban
+0 20 40 60 80 100
+Training Steps
+48%
+56%
+64%
+72%
+80%
+Accuracy
+OPD w/o ctx
+OPD w/ ctx
+Ours w/o ctx
+Ours w/ ctx
+0 20 40 60 80 100
+Training Steps
+8%
+16%
+24%
+32%
+40%
+Ctx-Hurt Rate
+OPD Ours
+0 20 40 60 80 100
+Training Steps
+32%
+40%
+48%
+56%
+64%
+Both-Correct Rate
+OPD Ours
+(c) Qwen3-4B-Instruct-2507 (self), FrozenLake
+0 20 40 60 80
+Training Steps
+58%
+60%
+62%
+63%
+64%
+66%
+Accuracy
+OPD w/o ctx
+OPD w/ ctx
+Ours w/o ctx
+Ours w/ ctx
+0 20 40 60 80
+Training Steps
+12%
+14%
+15%
+16%
+18%
+20%
+Ctx-Hurt Rate
+OPD Ours
+0 20 40 60 80
+Training Steps
+50%
+51%
+52%
+54%
+55%
+Both-Correct Rate
+OPD Ours
+(d) Qwen3-1.7B, Math
+Figure 11 | Regime A settings (part 2). NCA consistently closes the accuracy gap and reduces harm rate.
+23
+
+Toward Robust Internalization in On-Policy Distillation
+0 20 40 60 80 100
+Training Steps
+45%
+50%
+55%
+60%
+65%
+Accuracy
+OPD w/o ctx
+OPD w/ ctx
+Ours w/o ctx
+Ours w/ ctx
+0 20 40 60 80 100
+Training Steps
+0%
+5%
+10%
+15%
+20%
+25%
+Ctx-Hurt Rate
+OPD Ours
+0 20 40 60 80 100
+Training Steps
+40%
+44%
+48%
+52%
+56%
+60%
+Both-Correct Rate
+OPD Ours
+(a) Qwen2.5-7B-Instruct, MedMCQA
+0 20 40 60 80 100
+Training Steps
+60%
+65%
+70%
+75%
+80%
+Accuracy
+OPD w/o ctx
+OPD w/ ctx
+Ours w/o ctx
+Ours w/ ctx
+0 20 40 60 80 100
+Training Steps
+0%
+4%
+8%
+12%
+16%
+20%
+Ctx-Hurt Rate
+OPD Ours
+0 20 40 60 80 100
+Training Steps
+48%
+54%
+60%
+66%
+72%
+78%
+Both-Correct Rate
+OPD Ours
+(b) Llama-3.2-3B-Instruct, Safety
+0 20 40 60 80 100
+Training Steps
+0%
+20%
+40%
+60%
+80%
+Accuracy
+OPD w/o ctx
+OPD w/ ctx
+Ours w/o ctx
+Ours w/ ctx
+0 20 40 60 80 100
+Training Steps
+0%
+15%
+30%
+45%
+60%
+75%
+Ctx-Hurt Rate
+OPD Ours
+0 20 40 60 80 100
+Training Steps
+0%
+15%
+30%
+45%
+60%
+75%
+Both-Correct Rate
+OPD Ours
+(c) Qwen3-4B-Ins→1.7B, FrozenLake
+0 20 40 60 80
+Training Steps
+74%
+75%
+76%
+78%
+80%
+81%
+Accuracy
+OPD w/o ctx
+OPD w/ ctx
+Ours w/o ctx
+Ours w/ ctx
+0 20 40 60 80
+Training Steps
+4%
+6%
+8%
+9%
+10%
+Ctx-Hurt Rate
+OPD Ours
+0 20 40 60 80
+Training Steps
+69%
+70%
+72%
+73%
+Both-Correct Rate
+OPD Ours
+(d) Qwen3-8B, Math
+Figure 12 | Regime B settings. Context still provides useful scaffolding, and NCA trades some Acc
+𝑥,𝑐 
+for improved Acc
+𝑥 
+.
+24
+
+Toward Robust Internalization in On-Policy Distillation
+0 20 40 60 80 100
+Training Steps
+68%
+69%
+70%
+72%
+73%
+Accuracy
+OPD w/o ctx
+OPD w/ ctx
+Ours w/o ctx
+Ours w/ ctx
+0 20 40 60 80 100
+Training Steps
+0%
+2%
+3%
+4%
+6%
+Ctx-Hurt Rate
+OPD Ours
+0 20 40 60 80 100
+Training Steps
+64%
+66%
+68%
+69%
+70%
+Both-Correct Rate
+OPD Ours
+(a) Qwen3-8B, MedMCQA
+0 20 40 60 80 100
+Training Steps
+76%
+78%
+80%
+81%
+82%
+Accuracy
+OPD w/o ctx
+OPD w/ ctx
+Ours w/o ctx
+Ours w/ ctx
+0 20 40 60 80 100
+Training Steps
+2%
+3%
+4%
+6%
+8%
+9%
+Ctx-Hurt Rate
+OPD Ours
+0 20 40 60 80 100
+Training Steps
+72%
+74%
+75%
+76%
+78%
+80%
+Both-Correct Rate
+OPD Ours
+(b) Qwen3-8B, Safety
+Figure 13 | Regime C settings. Both views already agree, and NCA shows minimal additional effect.
+25
