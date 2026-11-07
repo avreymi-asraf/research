@@ -28,11 +28,20 @@ const METHOD = `You are an active, skeptical investigator, not a passive summari
 - Flag conflicts and single-source claims; don't smooth them over. 
 - Write a coherent story in logical order (chronological, causal or thematic), not a pile of facts. Mark non-obvious "subsurface insights".
 - Take your time; don't rush to conclude.
-- Keep your work in ${DIR}/ (create it if missing; earlier rounds may have filled it):
+- Keep your work in ${DIR}/ (create it if missing; it may already hold earlier work - build on it):
 1. ${DIR}/sources/ - saved sources, plus index.md: for each source, what it is, its URL, its grade, and what was extracted from it and any important thing about it.
 2. ${DIR}/directions.md - open leads, questions and points still to investigate. Optoinal sources of data Update it as you go.
 3. ${DIR}/report.md - the full report.
   - remember the loop:  search -> download the data -> Explore it -> Think about it-> consider what can be derived from it New avenues of inquiry -> Return to the search. stop it only when Only when you think there is no meaningful progress in the work.`
+
+// Research agents rotate through these, one per round. The judge is fixed.
+const RESEARCHERS = [
+  { model: 'claude-sonnet-5-5', effort: 'medium' },
+  { model: 'claude-sonnet-5-5', effort: 'high' },
+  { model: 'claude-opus-5-5', effort: 'medium' },
+  { model: 'claude-opus-5-5', effort: 'high' },
+]
+const JUDGE_MODEL = { model: 'claude-opus-5-5', effort: 'low' }
 
 const JUDGE = {
   type: 'object',
@@ -42,18 +51,18 @@ const JUDGE = {
 
 let report = ''
 for (let round = 1; round <= MAX_ROUNDS; round++) {
+  const r = RESEARCHERS[(round - 1) % RESEARCHERS.length]
   const next = await agent(
     `${GOAL}
 
 ${METHOD}
 
 Question: ${QUESTION}
-Round ${round}.
 
 ${report
-      ? `Previous round's report:\n${report}\n\nContinue the research: work through ${DIR}/directions.md, read sources not yet read, fill missing parts of the story, fix errors, cut padding. Update the files and return the full improved report.`
-      : 'Start the research. Create the files, and return the full report.'}`,
-    { label: `research ${round}` },
+      ? `Existing draft report:\n${report}\n\nImprove it: work through ${DIR}/directions.md, read sources not yet read, fill missing parts of the story, fix errors, cut padding. Update the files and return the full report.`
+      : 'Create the files, and return the full report.'}`,
+    { label: `research ${round} (${r.model} ${r.effort})`, ...r },
   )
   if (!next) break
 
@@ -70,7 +79,7 @@ NEW report:
 ${next}
 
 Is there genuine progress in NEW over OLD toward that goal, on the core of the question? Count new evidence, corrected errors, missing parts of the story now filled, or deeper understanding of the central issue. Don't count rewording, extra length, or side details. Be strict.`,
-      { label: `judge ${round}`, schema: JUDGE },
+      { label: `judge ${round}`, schema: JUDGE, ...JUDGE_MODEL },
     )
     log(`Round ${round}: ${verdict?.progress ? 'progress' : 'no progress'}: ${verdict?.reason}`)
     report = next
