@@ -1,0 +1,40 @@
+{
+ "model": "Qwen/Qwen2.5-0.5B-Instruct",
+ "n_train": 200,
+ "epochs": 3,
+ "replay": 60,
+ "teacher_train_label_invalid_rate": 0.0,
+ "teacher_acc_on_train_inputs": 0.615,
+ "teacher_prompted_id": 0.6333333333333333,
+ "base_noprompt_id": 0.0,
+ "base_noprompt_invalid_id": 1.0,
+ "teacher_prompted_ood": 0.5666666666666667,
+ "base_noprompt_ood": 0.0,
+ "base_noprompt_invalid_ood": 1.0,
+ "t_baselines_s": 163.2544002532959,
+ "n_train_used": 260,
+ "final_loss": 0.09208163460716605,
+ "t_train_s": 526.2471425533295,
+ "student_noprompt_id": 0.5333333333333333,
+ "student_noprompt_invalid_id": 0.0,
+ "student_with_rules_reintroduced_id": 0.6083333333333333,
+ "student_noprompt_ood": 0.5166666666666667,
+ "student_noprompt_invalid_ood": 0.0,
+ "student_with_rules_reintroduced_ood": 0.625,
+ "general_q_answered_with_label": 0.0,
+ "general_q_samples": [
+  "The capital of France is Paris.",
+  "Whispers of nature,\nRaindrops fall upon the ground,",
+  "17 + 25 equals 42.",
+  "One tip for improving your sleep quality is to create a relaxing",
+  "Good afternoon."
+ ],
+ "general_q_base_samples": [
+  "The capital of France is Paris.",
+  "Raindrops dance on the ground,\nA symphony of nature",
+  "The sum of 17 and 25 is:",
+  "Sleeping well is crucial for overall health and wellbeing. Here",
+  "\"Good morning\" in Spanish is \"Buenos d\u00edas"
+ ],
+ "t_total_s": 624.9744918346405
+}

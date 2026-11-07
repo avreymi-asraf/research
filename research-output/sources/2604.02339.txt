@@ -1,0 +1,942 @@
+                                               S IEVE: Sample-Efficient Parametric Learning from Natural Language
+
+
+                                                                       Parth Asawa 1 Alexandros G. Dimakis 1 2 Matei Zaharia 1
+
+
+                                                                   Abstract                                   fundamental limitations: it cannot leverage the benefits of
+                                             Natural language context—such as instructions,                   parametric learning, such as eliminating context window
+                                             knowledge, or feedback—contains rich signal                      constraints, enabling persistent improvements that survive
+                                             for adapting language models. While in-context                   across sessions, and improving performance through addi-
+                                                                                                              tional training compute.
+arXiv:2604.02339v1 [cs.LG] 2 Feb 2026
+
+
+
+
+                                             learning provides adaptation via the prompt, para-
+                                             metric learning persists into model weights and                  Due to these limitations, a line of work has emerged ex-
+                                             can improve performance further, though is data                  ploring parametric learning—directly internalizing context
+                                             hungry and heavily relies on either high-quality                 into model weights through training. Context distillation
+                                             traces or automated verifiers. We propose S IEVE,                approaches (Snell et al., 2022; Bhargava et al., 2024; Upad-
+                                             a method for sample-efficient parametric learning                hayayaya et al., 2025) “bake” instructions and examples
+                                             from natural language context that requires as few               into weights by training a student model to imitate a teacher
+                                             as three query examples. S IEVE uses a novel syn-                with access to context. Methods for training with natu-
+                                             thetic data generation pipeline, S IEVE -G EN, that              ral language feedback (Scheurer et al., 2022; Chen et al.,
+                                             leverages the insight that context is decomposable.              2024) show that textual corrections can improve model out-
+                                             Decomposing context allows us to generate higher                 puts. However, these parametric methods face a critical
+                                             quality rollouts by pairing synthetic queries with               bottleneck: they are data-hungry, typically requiring many
+                                             only the applicable context rather than the en-                  examples of queries or expensive expert-generated traces
+                                             tirety, then using context distillation to internalize           and automated verifiers. This creates a wide gap: ICL
+                                             context into the model. We evaluate in reason-                   works with minimal examples but cannot access paramet-
+                                             ing settings where context is necessary, including               ric benefits, while parametric methods offer these benefits
+                                             custom domains and the RuleArena and Machine                     but demand abundant data. Can we achieve the advan-
+                                             Translation from One Book tasks. Our results                     tages of parametric learning with the sample efficiency
+                                             show that S IEVE outperforms prior context distil-               of in-context learning?
+                                             lation methods using just three query examples,
+                                             demonstrating how to achieve sample-efficient                    We demonstrate that the answer is yes. With as few as three
+                                             parametric learning from natural language.                       examples of task queries, models can internalize natural
+                                                                                                              language context requiring multi-step reasoning, outper-
+                                                                                                              forming prior context distillation methods and even match-
+                                        1. Introduction                                                       ing or exceeding ICL performance without needing context
+                                                                                                              at inference time.
+                                        Language models today rely heavily on in-context learning
+                                        (ICL) to adapt to new tasks: users provide examples, instruc-         To create a sample-efficient method, we seek to leverage
+                                        tions, feedback, or domain knowledge directly in prompts to           synthetic queries and rollouts that are created from a natu-
+                                        guide model behavior (Brown et al., 2020). This approach              ral language context (C) and very few examples of queries.
+                                        has become ubiquitous—from developers writing extensive               Our key insight is that natural language context is de-
+                                        system prompts with coding standards and API documen-                 composable. Natural language context often consists of
+                                        tation, to users providing personal preferences and writing           independent context units (u) where only a subset applies to
+                                        styles, to domain experts supplying specialized knowledge             any given query. For example, a list of rules can be broken
+                                        for medical diagnosis or legal reasoning (Xu et al., 2024;            into individual parts, with each task requiring only a few;
+                                        Liu et al., 2025; Sahoo et al., 2025). However, ICL has               a grammar specification decomposes into individual con-
+                                                                                                              straints, with each translation needing only relevant ones.
+                                          1
+                                            University of California, Berkeley, CA, USA 2 Bespoke Labs.       The quality of context distillation training is heavily linked
+                                        Correspondence to: Parth Asawa <pgasawa@berkeley.edu>.                to the quality of the rollouts with context (r). Decomposing
+                                        Code available at:       https://github.com/pgasawa/
+                                        sieve.                                                                context allows us to filter and only include the context units
+                                                                                                              that are applicable to a particular query (ca ⊆ C), leading to
+                                        Preprint. April 6, 2026.
+
+                                                                                                          1
+                                Sample-Efficient Parametric Learning from Natural Language
+
+higher quality rollouts for training than prior methods that          2. Related Work
+indiscriminately provide all context for all queries.
+                                                                      Context Distillation. Work in context distillation, also
+Using this, we propose S IEVE, a method that achieves                 known as prompt baking or prompt distillation, seeks to
+sample-efficient parametric learning from natural language            internalize information from prompts directly into model
+context. The heart of our approach is S IEVE -G EN, a novel           weights (Bhargava et al., 2024; Upadhayayaya et al., 2025;
+synthetic data generation pipeline that requires natural lan-         Snell et al., 2022; Shenfeld et al., 2026). These methods
+guage context and just a few examples of queries. S IEVE -            typically employ a teacher-student framework, where a stu-
+G EN breaks context into context units, leverages a base              dent model is trained to mimic the output distribution of a
+language model to create diverse sets of context units for            teacher model that has access to additional context. While
+generating synthetic queries, then filters which units actu-          sharing the goal of parametric internalization, all of these
+ally apply to each query. This produces training data where           works assume access to a distribution of queries or expert
+queries are paired with only their applicable context, yield-         demonstrations (traces) from which to sample rollouts. Our
+ing higher-quality rollouts. We then apply standard context           work differs by focusing on sample-efficient learning from
+distillation techniques (Snell et al., 2022), distilling the          only minimal query examples.
+model’s behavior when conditioned on applicable context
+into weights that can perform the same reasoning without              Training with Natural Language Feedback. Several ap-
+context. Avoiding prior limitations, S IEVE enables para-             proaches integrate natural language context during training
+metric learning from natural language both without access             (Scheurer et al., 2022; Chen et al., 2024; Hübotter et al.,
+to many examples of queries over context nor high quality             2026). Rather than relying on scalar preference scores,
+traces or verifiers.                                                  these methods use rich textual feedback to generate refined
+                                                                      outputs for training. For instance, Scheurer et al. (2022) uses
+We evaluate S IEVE on domains requiring reasoning over                human feedback to generate multiple refinements and train
+context (not just factual recall): our Retail domain tests            on the highest-quality version. While we also adopt this
+compositional rule application over 30 discount rules,                pattern of using natural language context to create training
+RuleArena (NBA) (Zhou et al., 2025) evaluates complex                 examples, our contribution focuses on achieving this under
+sports regulation reasoning, and MTOB (Tanzer et al., 2024)           extreme data constraints without requiring expert-curated
+requires translating extremely low-resource languages from            traces, verifiers, or task-specific datasets.
+grammar specifications. Unlike prior work on parametric
+internalization that focuses on memorizing facts (Eyuboglu            Synthetic Data for Parametric Knowledge Injection. Re-
+et al., 2025; Lin et al., 2025; Yang et al., 2024), these tasks       cent work explores using synthetic data to inject knowl-
+require models to reason over internalized context at infer-          edge into model parameters. Cartridges and related knowl-
+ence time.                                                            edge injection methods (Eyuboglu et al., 2025; Kujanpää
+                                                                      et al., 2025) generate synthetic conversations from long-
+Our contributions are:                                                context document corpora and apply context distillation or
+                                                                      lightweight adapters to compress knowledge into KV caches
+  1. We demonstrate that sample-efficient parametric learn-           or LoRAs. Active Reading and Synthetic Continued Pre-
+     ing from natural language context is achievable with as          training (Lin et al., 2025; Yang et al., 2024) train models
+     few as three task examples, bridging the gap between             to acquire factual knowledge via self-generated synthetic
+     ICL’s sample efficiency and parametric learning’s ad-            data during pretraining. These approaches primarily target
+     vantages.                                                        fact recall and memorization, evaluating whether models
+                                                                      can retrieve stored information from parameters. In con-
+  2. We introduce S IEVE -G EN, a novel synthetic data gen-           trast, our work studies internalizing natural language context
+     eration method that exploits context decomposability             that requires multi-step reasoning and selective applicability
+     to create diverse, high-quality training data by pairing         at inference time. Our method and benchmarks therefore
+     queries with only their applicable context.                      emphasize reasoning over context, rather than simply re-
+                                                                      calling stored facts.
+  3. We show empirically that models trained with S IEVE
+     outperform prior context distillation methods and can
+     match or exceed in-context learning performance with-            3. Methods
+     out context at inference time, across multiple reasoning
+                                                                      We seek to design a method that integrates natural language
+     domains and model families.
+                                                                      context into model weights in a sample-efficient way. Un-
+                                                                      like prior work that focuses primarily on memorization or
+These findings establish that parametric learning can be prac-        factual recall, our approach targets the internalization of
+tical for incorporating natural language context, enabling            knowledge that requires complex reasoning at inference
+persistent improvements from minimal input.
+
+                                                                  2
+                                   Sample-Efficient Parametric Learning from Natural Language
+
+
+
+
+                                                 Sieve-Gen                                              Parametric Learning
+                                           (Synthetic Data Pipeline)                                     (Context Distillation)
+
+
+                                                     1. Decomposition                         Query +                               Teacher
+       Natural Language                                                                       applicable                          Distribution
+                                                     Break into atomic           Synthetic
+         Context ( )                                                                          context                               (Logits)
+                                                     context units.              Training                       Model
+                                                                                 Dataset:                     (Frozen         )
+
+
+
+          3 Seed Query                               2. Backtranslation
+                                                     Base Model samples         Queries and                       KL Divergence Loss
+            Examples
+                                                     units, Instruct Model       applicable
+                                                     generates queries.           context
+                                                                                    pairs
+                                                                                                                                    Student
+                                                     3. Verification                           Query                              Distribution
+                                                     Filter for applicable                                                          (Logits)
+                                                     context .                                                 Model
+                                                                                                             (Trainable   )
+
+
+
+Figure 1. S IEVE system overview. Given a natural language context corpus and as few as 3 seed query examples, S IEVE -G EN generates
+synthetic training data composed of (query, applicable context) pairs. These pairs are used for context distillation, where a student model
+learns to match a teacher’s distribution conditioned on applicable context, internalizing the knowledge into weights for inference without
+context.
+
+
+time. Importantly, our method is domain-agnostic—we                               the query and only the applicable context: (q, ca ) → r.
+use no task-specific prompt engineering, applying the same
+approach across all domains we evaluate (Appendix C). Fur-                     4. Train the model via context distillation to produce r
+ther gains could likely be achieved per-domain by doing                           given only q, internalizing the context into weights.
+so.
+                                                                             3.1. S IEVE -G EN: Synthetic Data Generation
+Context distillation methods typically make use of many ex-
+ample queries and sample rollouts with the entire context to                 The synthetic data generation process we propose, S IEVE -
+update the policy. Synthetic data provides an avenue around                  G EN, is crucial to the sample efficiency of our method.
+this, though high quality synthetic data is challenging. As                  Unlike typical synthetic data generation that simply samples
+motivated in Section 1, S IEVE leverages a key insight: when                 model outputs for given queries, S IEVE -G EN needs to both
+integrating natural language context into weights, not all                   generate diverse queries and pair each query with precisely
+context applies to every query. Simultaneously, natural                      the subset of context units applicable to it, exploiting the
+language context is often compositional; multiple portions                   decomposability of natural language context.
+may apply to any given query. Decomposing the context we
+wish to distill into context units enables us to precisely filter            S IEVE -G EN operates in three phases: decomposition, back-
+context into only what is applicable for particular queries.                 translation, and verification, and runs completely offline.
+This filtering leads to higher quality rollouts which in turn                Decomposition. We first prompt an instruction-tuned model
+leads to higher quality context distillation.                                to decompose the context corpus C into atomic context units
+Overview. Leveraging these insights, our approach consists                   {u1 , u2 , . . . , un } that can be independently evaluated for
+of four steps (Figure 1):                                                    applicability. Each context unit is intended to be a self-
+                                                                             contained piece of knowledge or instruction. This decompo-
+  1. Obtain a set of natural language context C (from hu-                    sition is performed by the model to ensure context units are
+     mans, automated systems, other LLMs, etc.) relevant                     semantically coherent (domain-agnostic prompt provided
+     to a task or domain, and example queries [e1 , e2 , e3 ]                in Appendix Section C). Decomposition might turn a list of
+     that serve as examples to a generator.                                  rules or instructions into individual ones, grammar specifi-
+                                                                             cations into individual constraints, etc. We provide example
+  2. Generate synthetic tuples of (query, applicable context                 context units for each of the domains we evaluate on in
+     units) pairs (q, ca ) where ca ⊆ C using S IEVE -G EN.                  Appendix B.
+  3. Sample a response r from the model conditioned on                       Backtranslation. To generate diverse synthetic queries, we
+
+                                                                       3
+                                 Sample-Efficient Parametric Learning from Natural Language
+
+perform backtranslation from context to queries:                       Algorithm 1 S IEVE -G EN: Synthetic Data Generation
+                                                                       Require: Context C, base model Mbase , instruction model
+  1. A base language model (trained only for next-token                    Minst , num. examples N , query examples [e1 , e2 , e3 ]
+     prediction) samples a subset of context units to serve            Ensure: Synthetic dataset D = {(qi , ca,i , ri )}N   i=1
+     as a seed: cseed ⊆ {u1 , . . . , un }                              1: {u1 , . . . , un } ← Decompose(C, Minst )
+                                                                        2: for i = 1 to N do
+  2. Given the set of seed context units cseed and example
+                                                                        3:   cseed ← SampleSubset({u1 , . . . , un }, Mbase )
+     queries e1 , e2 , e3 , an instruction-tuned model generates
+                                                                        4:   qi ← GenerateQuery(cseed , Minst , [e1 , e2 , e3 ])
+     a synthetic query q for which the seed context units
+                                                                        5:   ca,i ← Verify(qi , {u1 , . . . , un }, Minst )
+     would apply.
+                                                                        6:   ri ← Minst ([qi , ca,i ])
+                                                                        7: end for
+The use of a base model for seed selection is critical for              8: return D
+diversity. We observed that instruction-tuned models con-
+sistently select virtually the exact same subsets of context,
+leading to narrow coverage of the context space (similar to            3.2. Context Distillation Objective.
+results shown by Zhu et al. (2025)). Following BARE (Zhu
+et al., 2025), we found that base models produce substan-              We base our context distillation objective off of the work of
+tially more diverse seeds, resulting in broader internalization        Snell et al. (2022).
+of the full context corpus. We utilize a model rather than             Given an input query q and applicable natural language con-
+randomly sampling from the set of context units to ensure              text ca ⊆ C, the original model Mθ produces a response
+coherence in the seed context cseed from which a query is              conditioned on both q and ca . Rather than training on the
+generated.                                                             model’s discrete output, we distill the model’s conditional
+Verification. After generating query q from seed context               distribution into a student model via soft targets, while re-
+cseed , we verify which context actually applies to this query.        moving context from the student input.
+The model iterates through all context units {u1 , . . . , un }        Concretely, for each pair of synthetic query (q) and applica-
+and outputs a binary decision for each, producing the veri-            ble context (ca ) we generate, we construct a teacher input
+fied applicable context ca ⊆ C. The model is prompted to
+assess whether each context unit is necessary to answer the                                    c = [q; ca ],                     (1)
+query (see Appendix C). Along with the rest of S IEVE -G EN,
+                                                                       and obtain the teacher distribution
+this verification step is done entirely offline and motivated
+by the fact that the synthetic query may require additional
+                                                                                         pT (y | q, ca ) = Mθ (c).               (2)
+context beyond the seed, or conversely, not all seed context
+may actually be necessary.
+                                                                       We retain the top-K logits from pT to form a truncated
+The resulting tuple (q, ca ) is then used to generate training         soft target distribution p̃T , which preserves fine-grained
+data as in step 3 of our overview.                                     preference information while remaining computationally
+Long Context Extension. While we focus our method on                   efficient. We set k = 100 for our experiments following
+natural language context that fits in context for a model to           Snell et al. (2022).
+learn from, for settings where context exceeds the model’s             The student model Mϕ is trained on the same query x with-
+context window (e.g., MTOB, which uses 50K tokens for                  out access to any context ca , and is optimized to match the
+grammar books), we extend S IEVE -G EN to handle long                  teacher distribution:
+contexts. We chunk the context corpus by token count
+(default: 8192 tokens per chunk) with 512-token overlaps to
+                                                                                                                        
+                                                                                 LCD = KL p̃T (y | q, ca ) ∥ Mϕ (y | q) .       (3)
+guard against splitting related content. Each chunk is then
+processed through the decomposition phase independently                The model’s parameters are optimized over this objective.
+into a list of context units.                                          We experimented with alternative options such as LoRA
+                                                                       training though saw worse performance.
+For the verification phase with long contexts, the compute
+required to generate data by verifying every single point              Models. We focus our experiments on the Qwen3 8B fam-
+of context individually can become quite large. Instead,               ily of models (Qwen Team, 2025). We provide additional
+we can batch context units together rather than evaluating             ablations with other model families such as Llama 3.1 8B
+them individually. Here instead of binary yes/no outputs,              (Llama Team, 2024) and Rnj 1 8B (Vaswani et al., 2025a;b)
+the model identifies which specific units from each batch              in Section 4.4.2. We sample rollouts for distillation from
+are applicable to the query, reducing computational cost.              the same model we train in all experiments.
+
+                                                                   4
+                                             Sample-Efficient Parametric Learning from Natural Language
+                               Retail                                             RuleArena NBA L2                                                    MTOB
+           0.5                                                                                                                     30
+                                                  0.45
+                                                                    0.30                                                                                              25.9
+                                                                                                               0.26                25
+           0.4                          0.36                        0.25
+                                0.34                                                                                                                                  24.5
+                                                  0.32                                                                             20                          22.5
+
+
+
+
+                                                                                                                      chrF Score
+                                                                                                               0.23                            21.6    21.7
+Accuracy
+
+
+
+
+                                                         Accuracy
+           0.3                                                      0.20                               0.22                             20.1
+                        0.24
+                                                                                             0.18                                  15
+                                                                    0.15 0.16
+           0.2                                                                    0.15
+                                                                    0.10                                                           10
+           0.1                                                                                                                      5
+                                        ICL Baseline                0.05
+                 0.07                   SIEVE
+           0.0                                                      0.00                                                            0
+                 1K     2K       4K     8K        16K                      1K     2K         4K        8K      16K                      1K     2K      4K      8K     16K
+                        Training Data Size                                         Training Data Size                                          Training Data Size
+                                                                                SIEVE           ICL Baseline
+
+Figure 2. S IEVE improves with scale while real data input is constant. Across various domains, S IEVE improves as we scale the
+amount of data we generate with S IEVE -G EN (using the same fixed three example queries as inputs), approximately matching or exceeding
+ICL baseline performance when evaluated without any context. All domains use the Qwen3-8B model family with thinking disabled.
+
+
+4. Evaluation                                                                                 We take a task from the RuleArena benchmark (Zhou et al.,
+                                                                                              2025), typically intended as a complex instruction-following
+We show that with S IEVE, natural language context can                                        benchmark, and apply context distillation methods to inter-
+be efficiently internalized into model weights and reach                                      nalize the entire corpus of natural language rules a model
+performance comparable to or surpassing ICL baselines.                                        would normally be provided with in context. This corpus is
+                                                                                              approximately 20,000 tokens of NBA player trade rules and
+4.1. Domains                                                                                  regulations to determine if a sequence of trades is illegal
+Because existing benchmarks rarely study adapting from                                        and if so why. We use the Level 2 setting for evaluation,
+natural language context, we both construct a controlled                                      which comprises the most difficult tasks in the benchmark.
+synthetic domain and modify other benchmarks to fit our                                       Accuracy is measured as exact match on the legality deter-
+setting. We evaluate S IEVE on domains requiring reasoning                                    mination and violation identification.
+over context (not just factual recall) that are verifiable. We                                MTOB. Though we focus our work on context that requires
+note that we expect methods such as S IEVE that learn from                                    reasoning, for the sake of evaluating on very long context
+natural language to work well in, and potentially address                                     settings, we turn to the Machine Translation from One Book
+a larger gap in, less verifiable domains as well (such as                                     (MTOB) benchmark (Tanzer et al., 2024). Here, a model is
+personalization), though for the purposes of controlled study,                                tasked with translating an extremely low-resource language,
+we stick to verifiable ones.                                                                  Kalamang, for which there exists very limited resources
+Retail. We first introduce the Retail domain, a synthetic                                     outside of the corpus provided in the benchmark, to English.
+task carefully constructed to be verifiable and explicitly                                    The grammar book and parallel examples span approxi-
+require the natural language context to solve any instance of                                 mately 50,000 tokens, exceeding typical context windows
+the task. This domain further differs from prior studies on                                   and requiring 2× RoPE scaling for the ICL baseline. This
+parametric learning in requiring the model to reason over                                     domain emphasizes memorization more than compositional
+the compositionality of its context and selectively apply                                     reasoning, making it a complementary challenge to Retail
+relevant rules at inference time, rather than simply recall                                   and RuleArena. For the MTOB domain specifically, we also
+facts.                                                                                        omit the verification step. Because the model lacks prior
+                                                                                              knowledge of the target language, synthetic queries can only
+The model is tasked with calculating the price of a shopping                                  incorporate concepts present in the seed context. In contrast,
+cart given 30 discount rules that conditionally may apply.                                    for domains where the model has background knowledge,
+These rules are not provided at evaluation time when testing                                  verification is necessary—the model might generate queries
+parametric learning methods. We programatically generate                                      that implicitly require additional context beyond the seed.
+256 evaluation queries as well as the corresponding ground                                    Performance is measured with the chrF metric (Popović,
+truth price. Accuracy is measured as binary exact accuracy                                    2015).
+within .01 error. We provide a full example query and the
+entire list of natural language rules for the Retail domain in
+Appendix B.1.
+RuleArena (NBA). We then turn to existing benchmarks.
+
+                                                                                         5
+                                                      Sample-Efficient Parametric Learning from Natural Language
+                                         Retail                                                  RuleArena NBA L2                                                      MTOB
+           0.5                                                               0.35                                                                35
+                                                                             0.30                                                                30
+           0.4                                          0.36
+                                                                             0.25                                          0.22                  25                               24.48
+                                            0.30                                                               0.20
+
+
+
+
+                                                                                                                                    chrF Score
+           0.3
+Accuracy
+
+
+
+
+                                                                  Accuracy
+                                                                             0.20                                                                20            19.10
+                                                                                          0.16
+           0.2                                                               0.15                                                                15
+                                                                             0.10                                                                10
+           0.1
+                     0.03                                                    0.05                                                                 5
+           0.0                                                               0.00                                                                 0
+                     CD                     CD      SIEVE)                              CD                     CD      SIEVE)                                  ges            SIE6VKE)
+            Vanilla(n=3)        Vaneiltlaic 8K)     (3 8K                      Vanilla(n=3)        Vaneiltlaic 8K)     (3 8K                          Cartrid(16K)             (1
+                            (Sy n t h                                                          (Sy n th
+                                                   Vanilla CD (n=3)                 Vanilla CD (Synthetic 8K)          Cartridges          SIEVE (3 8K/16K)
+
+Figure 3. Comparison to baseline context distillation methods. We compare S IEVE against vanilla context distillation baselines across
+domains. VCD (3 seeds) trains on only the three seed query examples with all context. VCD−S (8K) uses our synthetically generated
+queries but includes all context during rollout generation (no selective filtering). S IEVE generates synthetic data from three seeds to 8/16K
+scales and outperforms baselines with the same amount of training data in all scenarios.
+
+
+4.2. S IEVE: Scaling Data                                                                                       lenging tasks, yet S IEVE still shows consistent improvement
+                                                                                                                with scale and with 16K data points can match ICL perfor-
+In Figure 2, we evaluate how S IEVE scales with increas-
+                                                                                                                mance without relying on any context.
+ing amounts of synthetic data. Critically, all experiments
+across all domains use only the context and three query ex-                                                     These results demonstrate that sample-efficient parametric
+amples—no additional expert-curated traces or automated                                                         learning from natural language is achievable: with only
+verifiers are required. These three examples mainly serve                                                       three query examples, our method can internalize complex
+as formatting examples for the synthetic data generation.                                                       reasoning knowledge and match ICL performance without
+From the fixed context and three seeds, we evaluate S IEVE -                                                    requiring context at inference time.
+G EN on up to 16,000 synthetic tuples of queries paired with
+their applicable context from the broader corpus of natural                                                     4.3. Comparison to Baseline Context Distillation
+language context. We train for 2 epochs on the Retail and                                                            Methods
+RuleArena domains and 5 epochs on the MTOB domain,
+chosen by empirically seeing when loss converged. Fur-                                                          We evaluate the effectiveness of S IEVE in contrast to alter-
+ther details of training hyperparameters used by our runs of                                                    native context distillation approaches and show that it can
+S IEVE are provided in Appendix A.                                                                              outperform vanilla context distillation methods as well as
+                                                                                                                methods designed for longer contexts. Results are shown in
+We compare our method with scale to an in-context learn-                                                        Figure 3.
+ing baseline where the natural language context is provided
+directly in context at inference time. This is typically the                                                    4.3.1. BASELINES :
+gold baseline in traditional context distillation works, and
+what we aim to approximately match or potentially even                                                          Vanilla Context Distillation (VCD ): Traditional context
+surpass with our approach.                                                                                      distillation methods, such as proposed in Snell et al. (2022);
+                                                                                                                Bhargava et al. (2024), do not leverage synthetic data to-
+We consistently find across all three domains that perfor-                                                      wards sample-efficient learning. Thus we provide a result
+mance improves as synthetic data scales, and trends suggest                                                     if we were to train on the same three seed query examples
+that scaling data generation further would continue to yield                                                    our method receives (and all context). Since vanilla context
+gains. Notably, S IEVE roughly matches or outperforms ICL                                                       distillation does not perform synthetic data generation, this
+baselines at the scales we evaluate, with this effect most                                                      baseline operates under severe data constraints and is meant
+prominent in shorter-context settings (Retail). The perfor-                                                     to show the importance of sample-efficient approaches. We
+mance further emphasizes that our method’s data generation                                                      train till loss converges.
+process allows for a trained model to compose different
+pieces of internalized context together at inference time,                                                      Vanilla Context Distillation w/ Synthetic Queries
+improving over ICL by 37.7%.                                                                                    (VCD−S ): To create a fairer comparison, we provide vanilla
+                                                                                                                context distillation with access to our synthetically gener-
+For RuleArena and MTOB, the longer context nature (20-                                                          ated queries (up to 8K examples). However, unlike S IEVE,
+50K tokens requiring RoPE scaling) makes for more chal-                                                         this baseline includes all context in context during rollout
+
+
+                                                                                                           6
+                                 Sample-Efficient Parametric Learning from Natural Language
+
+generation, without filtering to only applicable context. As a         Table 1. Oracle access to programmatic queries on Retail.
+                                                                       Comparison under perfect access to programmatically generated
+result, this also serves as an ablation to the filtering portion       queries, where the baseline method is trained on these ground
+of our method.                                                         truth (non-synthetic) queries and full context in the rollouts. Our
+                                                                       selective context distillation outperforms vanilla context distillation
+Cartridges: For MTOB, the 50K token corpus exceeds
+                                                                       even in this unfavorable setting where we use synthetic data. Both
+the model’s 32K context window, making standard con-                   methods use 4096 examples for training.
+text distillation infeasible. We instead compare against
+Cartridges (Eyuboglu et al., 2025), a method explicitly
+designed for long-context parametric memorization into KV                M ETHOD                                   M EAN ACCURACY (%)
+caches, matching the amount of data to our method and                    VANILLA CD (O RACLE Q UERIES )                      27.11
+using their recommended training hyperparameters. We                     S IEVE                                              33.98
+do not evaluate Cartridges on Retail or RuleArena, as it is
+designed for factual recall from long documents rather than            Table 2. Multiple rollouts vs. scaling distinct queries on Retail.
+compositional reasoning over rules and instructions. Prelim-           We find that there is a tradeoff between generating multiple rollouts
+inary experiments suggested improvements over no-context               per query versus scaling the number of distinct queries, holding
+                                                                       total generations constant, potentially indicating another axis for
+baselines were marginal.                                               putting more compute in towards improved performance when
+Results. On Retail, VCD with only three seed examples                  data diversity is saturated.
+achieves just 3% accuracy—insufficient data for the model
+to learn 30 compositional discount rules. When provided                     S ETTING      D ISTINCT Q UERIES        ACCURACY (%)
+with 8K synthetic queries (VCD−S ), performance improves
+                                                                            512×8                   512                   30.23
+dramatically to 30%, but S IEVE still outperforms at 36%                    4096×1                 4096                   33.98
+by filtering to only applicable context during training. This
+demonstrates that selective applicability is critical: even                 1024×8                 1024                   37.97
+                                                                            8192×1                 8192                   35.78
+with abundant synthetic queries, including all context indis-
+criminately yields worse results than our targeted approach.
+On RuleArena (NBA), we observe similar trends: S IEVE                  4.4. Ablations
+achieves a 10% lift over VCD−S that uses our synthetic data            4.4.1. M ULTIPLE ROLLOUTS VS . S CALING DATA
+and 37.5% over a context distillation approach that only
+uses the three seeds.                                                  Recent work has suggested that generating multiple roll-
+                                                                       outs per query can improve distillation performance without
+For MTOB, vanilla context distillation is infeasible due to            requiring additional distinct data (Guha et al., 2025). To in-
+the 50K token corpus exceeding context limits. Instead, Car-           vestigate this tradeoff in our setting, we compare increasing
+tridges achieves 19.10 chrF score—outperforming having                 the number of rollouts per query to scaling the number of
+no internalized knowledge (15.88)—while S IEVE reaches                 distinct queries, while holding the total number of teacher
+24.48 (both using 16K data points, though Cartridges targets           generations approximately constant. Specifically, we com-
+the KV cache while S IEVE targets the model weights). This             pare two controlled settings: (i) generating 8 rollouts per
+represents a substantial improvement, though both methods              query at smaller scales (512×8 and 1024×8), and (ii) scal-
+fall short of the ICL baseline due to the difficulty of the            ing the number of distinct queries to matched totals (4096×1
+long-context memorization task.                                        and 8192×1). Results are shown in Table 2.
+Oracle Query Experiment. To further isolate the impor-                 We observe a tradeoff between scaling the number of dis-
+tance of selective context filtering, we conduct an additional         tinct queries and increasing the number of rollouts per query.
+experiment on Retail where we programmatically generate                At smaller scales, increasing query diversity is more effec-
+queries from our ground truth pipeline rather than using               tive: 4096×1 outperforms 512×8, indicating that additional
+synthetically generated queries — thus perfectly matching              distinct queries provide greater benefit than repeated sam-
+the train and test distributions. We provide these oracle              pling of the same inputs. At larger scales, however, 1024×8
+queries to vanilla context distillation, which includes all            slightly outperforms 8192×1, suggesting that once suffi-
+context in context during rollout generation. Results in Ta-           cient query diversity has been achieved, multiple rollouts
+ble 1 show that even with perfect queries, vanilla context             can provide complementary gains. This indicates a regime
+distillation achieves only 27.11%, while S IEVE with syn-              in which stochastic sampling of high-quality queries be-
+thetic queries achieves 33.98%. This result underscores                comes increasingly beneficial.
+that selective applicability—pairing queries with only their
+relevant context—is potentially more important than query              Overall, these results suggest that scaling distinct queries is
+quality alone.                                                         critical in low-data regimes, while multiple rollouts become
+                                                                       a useful secondary mechanism for improved performance
+
+                                                                   7
+                                                 Sample-Efficient Parametric Learning from Natural Language
+
+after query diversity saturates. The optimal tradeoff between                                   efficient parametric learning remains challenging.
+query diversity and rollout count therefore appears to be
+                                                                                                Future work could explore whether curriculum learning or
+domain- and scale-dependent, and should be determined
+                                                                                                progressive training strategies might enable weaker models
+empirically.
+                                                                                                to benefit from this approach. Another line of work might
+                                                                                                also consider decoupling the synthetic data generation mod-
+ 4.4.2. A LTERNATIVE M ODEL FAMILIES
+                                                                                                els from the model that is trained, stepping away from the
+                                                                                                self-distillation paradigm we focus on in this work.
+                              Alternate Model Families (Retail)
+           0.25
+                                                                               ICL
+                                                                               SIEVE (8K)
+           0.20
+                                                                                                5. Conclusion & Future Work
+                                     0.170
+                                                                                                Our work introduces a method that achieves sample-efficient
+           0.15   0.140
+                                                                                                parametric learning from natural language. Through S IEVE
+Accuracy
+
+
+
+
+                                                                                                and its novel synthetic data generation method S IEVE -G EN,
+           0.10                                                                                 we show that models can internalize complex reasoning
+                                                            0.045                               knowledge using a very small number of seed query ex-
+           0.05                                                            0.034
+                                                                                                amples. Our method outperforms prior context distillation
+                                                                                                methods in sample-efficient settings. S IEVE further matches
+           0.00
+                          RNJ 1 8B                              Llama 3.1 8B                    or exceeds the performance of in-context learning without
+                                             Model Family
+                                                                                                requiring context at inference time. Our key insight is that
+Figure 4. S IEVE generalizes across model families. We evalu-                                   for many tasks, not all context applies to every query. By
+ate S IEVE on the Retail domain using alternative model families:                               decomposing the context and constructing synthetic data
+Llama 3.1 8B and Rnj 1 8B. Results demonstrate that S IEVE con-                                 that only use applicable parts of it, we sample higher quality
+sistently improves model performance across diverse architectures
+                                                                                                rollouts that outperform past context distillation methods,
+(8K training examples).
+                                                                                                including when given access to more data or higher-quality
+To verify that our method generalizes beyond the Qwen3                                          (non-synthetic) oracle queries.
+model family, we replicate experiments on the Retail domain                                     We find that parametric learning can be practical across
+using Llama 3.1 8B (Llama Team, 2024) and Rnj 1 8B                                              multiple domains requiring compositional reasoning (Retail,
+(Vaswani et al., 2025a;b). Results are shown in Figure 4.                                       RuleArena) and long-context memorization (MTOB). Cru-
+For Rnj 1 8B, S IEVE achieves 17.03% accuracy with 8K                                           cially, this can be achieved without the complexities that tra-
+training examples, exceeding the ICL baseline of 13.98%.                                        ditionally make parametric learning challenging: many ex-
+This demonstrates that sample-efficient parametric learn-                                       amples of input queries, large supervised datasets of expert-
+ing from natural language context successfully generalizes                                      curated traces, or verifiers. This opens new possibilities for
+to alternative model architectures, with the trained model                                      continual learning systems that improve persistently from
+outperforming ICL without requiring context at inference.                                       natural language context in real-world settings.
+
+However, for Llama 3.1 8B, we observe a different pat-                                          Future Directions. Sample-efficient parametric learning
+tern. The ICL baseline achieves only 4.53% accuracy, and                                        from natural language enables several promising research di-
+S IEVE training yields 3.44%—slightly below the ICL base-                                       rections. First, this paradigm allows for learning algorithms
+line. This reveals an important limitation: the base model                                      that adapt from rich, non-scalar context in sample-efficient
+must have sufficient capability for the method to be effec-                                     ways moving beyond simple preference scores to leverage
+tive. The Llama 3.1 8B model performs extremely poorly                                          the full expressiveness of natural language. Second, ex-
+on Retail even with context in context, suggesting it lacks                                     panding the suite of learning methods remains important:
+the foundational reasoning abilities required for this compo-                                   exploring architectural modifications (e.g., specialized mem-
+sitional rule-application task. When the base model is too                                      ory layers), alternative training objectives beyond context
+weak, it struggles both to generate high-quality synthetic                                      distillation, and methods for managing interference between
+data through S IEVE -G EN and to internalize the resulting                                      updates could further improve sample efficiency and scal-
+training signal effectively.                                                                    ability. Third, developing more challenging benchmarks
+                                                                                                that require deeper reasoning, longer-term memory, and
+This ablation highlights that S IEVE requires a model with                                      compositional generalization will be critical for advancing
+reasonable capabilities on the target domain. For mod-                                          parametric learning methods. Finally, studying how these
+els that can leverage context in context (like Qwen3 and                                        sample-efficient learning methods can enable truly continual
+Rnj), our method successfully internalizes that context into                                    learning—where models iteratively improve from ongoing
+weights. For models that cannot effectively use context even                                    feedback—represents an exciting frontier for making LLMs
+when provided (like Llama 3.1 8B on this task), sample-
+
+                                                                                            8
+                                Sample-Efficient Parametric Learning from Natural Language
+
+more adaptive and specialized over time.                               M. A., Hashimoto, T., Choi, Y., Jitsev, J., Heckel, R.,
+                                                                       Sathiamoorthy, M., Dimakis, A. G., and Schmidt, L.
+Acknowledgements                                                       Openthoughts: Data recipes for reasoning models, 2025.
+                                                                       URL https://arxiv.org/abs/2506.04178.
+We would like to thank Alan Zhu, Andrew Qin, and Joseph
+E. Gonzalez for many insightful discussions about this work.         Hübotter, J., Lübeck, F., Behric, L., Baumann, A., Bagatella,
+                                                                       M., Marta, D., Hakimi, I., Shenfeld, I., Buening, T. K.,
+Sky Computing Lab is supported by gifts from Accenture,                Guestrin, C., and Krause, A. Reinforcement learning via
+Amazon, AMD, Anyscale, Broadcom, Google, IBM, Intel,                   self-distillation, 2026. URL https://arxiv.org/
+Intesa Sanpaolo, Lambda, Lightspeed, Mibura, NVIDIA,                   abs/2601.20802.
+Samsung SDS, and SAP. We would additionally like to ac-
+knowledge Databricks for their generous compute support.             Kujanpää, K., Marttinen, P., Valpola, H., and Ilin,
+                                                                      A. Efficient knowledge injection in llms via self-
+This material is based upon work supported by the Na-                  distillation, 2025. URL https://arxiv.org/abs/
+tional Science Foundation Grant No. CCF-2019844. Any                   2412.14964.
+opinions, findings, and conclusions or recommendations
+expressed in this material are those of the author(s) and do         Lin, J., Berges, V.-P., Chen, X., Yih, W.-T., Ghosh, G., and
+not necessarily reflect the views of the National Science              Oğuz, B. Learning facts at scale with active reading, 2025.
+Foundation.                                                            URL https://arxiv.org/abs/2508.09494.
+                                                                     Liu, J., Qiu, Z., Li, Z., Dai, Q., Yu, W., Zhu, J., Hu, M.,
+References                                                             Yang, M., Chua, T.-S., and King, I. A survey of per-
+                                                                       sonalized large language models: Progress and future
+Bhargava, A., Witkowski, C., Detkov, A., and Thomson, M.
+                                                                       directions, 2025. URL https://arxiv.org/abs/
+  Prompt baking, 2024. URL https://arxiv.org/
+                                                                       2502.11528.
+  abs/2409.13697.
+                                                                     Llama Team. The Llama 3 herd of models. arXiv preprint
+Brown, T. B., Mann, B., Ryder, N., Subbiah, M., Kaplan,
+                                                                       arXiv:2407.21783, 2024.
+  J., Dhariwal, P., Neelakantan, A., Shyam, P., Sastry, G.,
+  Askell, A., Agarwal, S., Herbert-Voss, A., Krueger, G.,            Popović, M. chrF: character n-gram F-score for automatic
+  Henighan, T., Child, R., Ramesh, A., Ziegler, D. M., Wu,             MT evaluation. In Proceedings of the tenth workshop on
+  J., Winter, C., Hesse, C., Chen, M., Sigler, E., Litwin, M.,         statistical machine translation, pp. 392–395, 2015.
+  Gray, S., Chess, B., Clark, J., Berner, C., McCandlish,
+  S., Radford, A., Sutskever, I., and Amodei, D. Language            Qwen Team. Qwen3 technical report, 2025. URL https:
+  models are few-shot learners, 2020. URL https://                    //arxiv.org/abs/2505.09388.
+  arxiv.org/abs/2005.14165.                                          Sahoo, P., Singh, A. K., Saha, S., Jain, V., Mondal, S.,
+Chen, A., Scheurer, J., Korbak, T., Campos, J. A., Chan,               and Chadha, A. A systematic survey of prompt engi-
+  J. S., Bowman, S. R., Cho, K., and Perez, E. Improv-                 neering in large language models: Techniques and ap-
+  ing code generation by training with natural language                plications, 2025. URL https://arxiv.org/abs/
+  feedback, 2024. URL https://arxiv.org/abs/                           2402.07927.
+  2303.16749.                                                        Scheurer, J., Campos, J. A., Chan, J. S., Chen, A., Cho, K.,
+Eyuboglu, S., Ehrlich, R., Arora, S., Guha, N., Zinsley, D.,           and Perez, E. Training language models with language
+  Liu, E., Tennien, W., Rudra, A., Zou, J., Mirhoseini, A.,            feedback, 2022. URL https://arxiv.org/abs/
+  and Re, C. Cartridges: Lightweight and general-purpose               2204.14146.
+  long context representations via self-study, 2025. URL             Shenfeld, I., Damani, M., Hübotter, J., and Agrawal, P.
+  https://arxiv.org/abs/2506.06266.                                    Self-distillation enables continual learning, 2026. URL
+Guha, E., Marten, R., Keh, S., Raoof, N., Smyrnis, G.,                 https://arxiv.org/abs/2601.19897.
+  Bansal, H., Nezhurina, M., Mercat, J., Vu, T., Sprague,            Snell, C., Klein, D., and Zhong, R. Learning by distill-
+  Z., Suvarna, A., Feuer, B., Chen, L., Khan, Z., Frankel,             ing context, 2022. URL https://arxiv.org/abs/
+  E., Grover, S., Choi, C., Muennighoff, N., Su, S., Zhao,             2209.15189.
+ W., Yang, J., Pimpalgaonkar, S., Sharma, K., Ji, C. C.-J.,
+  Deng, Y., Pratt, S., Ramanujan, V., Saad-Falcon, J., Li,           Tanzer, G., Suzgun, M., Visser, E., Jurafsky, D., and Melas-
+ J., Dave, A., Albalak, A., Arora, K., Wulfe, B., Hegde,               Kyriazi, L. A benchmark for learning to translate a new
+  C., Durrett, G., Oh, S., Bansal, M., Gabriel, S., Grover,            language from one grammar book, 2024. URL https:
+ A., Chang, K.-W., Shankar, V., Gokaslan, A., Merrill,                 //arxiv.org/abs/2309.16575.
+
+                                                                 9
+                                Sample-Efficient Parametric Learning from Natural Language
+
+Upadhayayaya, R., Osti, M. R., Smith, Z., and Kottmyer,
+  C. Efficient llm context distillation, 2025. URL https:
+ //arxiv.org/abs/2409.01930.
+Vaswani, A., Callahan, M., Chaluvaraju, A., Gordić, A.,
+  Gupta, D., Jain, Y., Mansingka, D., Monk, P., Nguyen, K.,
+  Parmar, M., Pust, M., Romanski, T., Rushton, P., Sheh-
+  per, A., Shivaprasad, D., Singla, S., Smith, K., Srivas-
+  tava, S., Thomas, A., Tripathy, A., Vanjani, Y., Velingker,
+  A., and Essential AI. Rnj-1, 2025a. URL https://
+  huggingface.co/EssentialAI/rnj-1. base
+  model release.
+Vaswani, A., Callahan, M., Chaluvaraju, A., Gordić,
+  A., Gupta, D., Jain, Y., Mansingka, D., Monk, P.,
+  Nguyen, K., Parmar, M., Pust, M., Romanski, T.,
+  Rushton, P., Shehper, A., Shivaprasad, D., Singla, S.,
+  Smith, K., Srivastava, S., Thomas, A., Tripathy, A.,
+  Vanjani, Y., Velingker, A., and Essential AI. Rnj-
+  1-Instruct, 2025b. URL https://huggingface.
+  co/EssentialAI/rnj-1-instruct. Instruction-
+  tuned model release.
+Xu, T., Hu, Z., Chen, L., and Li, B. Sa-mdkif: A scal-
+  able and adaptable medical domain knowledge injec-
+  tion framework for large language models, 2024. URL
+  https://arxiv.org/abs/2402.00474.
+Yang, Z., Band, N., Li, S., Candès, E., and Hashimoto, T.
+  Synthetic continued pretraining, 2024. URL https:
+  //arxiv.org/abs/2409.07431.
+Zhou, R., Hua, W., Pan, L., Cheng, S., Wu, X., Yu, E., and
+  Wang, W. Y. RuleArena: A benchmark for rule-guided
+  reasoning with LLMs in real-world scenarios, 2025. URL
+  https://arxiv.org/abs/2412.08972.
+Zhu, A., Asawa, P., Davis, J. Q., Chen, L., Hanin, B., Stoica,
+  I., Gonzalez, J. E., and Zaharia, M. Bare: Leveraging
+  base language models for few-shot synthetic data genera-
+  tion, 2025. URL https://arxiv.org/abs/2502.
+  01697.
+
+
+
+
+                                                                10
+                                Sample-Efficient Parametric Learning from Natural Language
+
+A. Training Details
+We run all training experiments unless otherwise noted on a single node of 8xH100s. For reproducibility, we provide key
+non-default training parameters used in Table 3 and Table 4. Number of epochs were chosen empirically per domain based
+on loss convergence.
+
+                                              Table 3. Training Hyperparameters
+
+                                            Hyperparameter                Value
+                                            Learning Rate               1 × 10−5
+                                            Batch Size (per device)          1
+                                            Gradient Accumulation           8
+                                            Effective Batch Size            64
+                                            Temperature (τ )               1.0
+                                            Warmup Steps                    50
+                                            Top-K Tokens                   100
+                                            Max Sequence Length          16,384
+                                            Optimizer                   AdamW
+                                            DeepSpeed Config             ZeRO-3
+                                            Number of GPUs                   8
+
+
+
+                                           Table 4. Dataset-Specific Hyperparameters
+
+                                       Hyperparameter        Retail    NBA      MTOB
+                                       Epochs                   2        2         5
+
+
+
+B. Extended Domain Discussion
+We provide further information regarding the domains we evaluate on in the paper here.
+
+B.1. Retail
+Retail Domain. The Retail domain involves calculating final prices after applying complex discount rules to shopping carts.
+Each query is programmatically generated with a subset of the following components:
+
+
+  • Customer Types: 6 types (student, senior citizen, veteran, employee, teacher, regular)
+
+
+  • Product Categories: 8 categories (electronics, clothing, books, food, home, sports, beauty, health)
+
+
+  • Promo Codes: 7 promotional codes (SAVE20, WELCOME10, STUDENT15, HOLIDAY30, NEWBIE5, TEACHER10,
+    BULK10)
+
+
+  • Membership Tiers: 3 tiers (bronze: 1+ years, silver: 3+ years, gold: 5+ years)
+
+
+Each query presents a customer profile (type, membership years), shopping cart (1-5 items with categories, prices, quantities),
+and optional promo code. The model must calculate the final price after applying all applicable discount rules, which may
+stack multiplicatively or apply to specific categories. Ground truth is computed programmatically using the rule engine.
+
+                                                              11
+                           Sample-Efficient Parametric Learning from Natural Language
+
+Retail Example Query
+
+Calculate the final price for the following customer purchase after applying all applicable discount rules.
+
+Customer Profile:
+- Type: senior
+- Membership years: 4
+
+Shopping Cart:
+- Shoes (apparel): $85.00 x 2
+- Jacket (apparel): $60.00 x 1
+- Coffee Maker (home): $45.00 x 1
+
+Promo code: None
+
+IMPORTANT: Apply discounts in this exact order to the running total:
+1. Category-specific percentage discounts (apply only the highest discount per category to each category’s subtotal)
+2. Total purchase percentage discounts (apply only the highest total discount to the remaining amount after step 1)
+3. Fixed amount discounts (subtract from the remaining amount after step 2, sum all applicable fixed discounts)
+
+Note: Each discount applies to the current running total, not the original price.
+
+
+
+
+                                                         12
+                               Sample-Efficient Parametric Learning from Natural Language
+
+   Retail Rules
+    Discount Rules:
+   - If customer is a student AND total spend is at least $50, apply 10% discount to total purchase
+   - If customer is a senior citizen AND total spend is at least $50, apply 15% discount to total purchase
+   - If customer is a employee AND total spend is at least $50, apply 20% discount to total purchase
+   - If customer is a teacher AND total spend is at least $50, apply 10% discount to total purchase
+   - If customer is a student AND cart contains electronics, apply 15% discount on electronics items only
+   - If customer is a student AND cart contains books, apply 15% discount on books items only
+   - If customer is a senior citizen AND cart contains food, apply 20% discount on food items only
+   - If customer is a veteran AND cart contains electronics, apply 5% discount on electronics items only
+   - If customer is a employee AND cart contains home, apply 25% discount on home items only
+   - If customer is a teacher AND cart contains books, apply 15% discount on books items only
+   - If promo code is ’SAVE20’ AND total spend is at least $100, apply 20% discount to total purchase
+   - If promo code is ’WELCOME10’, apply $10 fixed discount
+   - If customer is a student AND promo code is ’STUDENT15’, apply 15% discount to total purchase
+   - If promo code is ’HOLIDAY30’ AND total spend is at least $150, apply 30% discount to total purchase
+   - If promo code is ’NEWBIE5’, apply $5 fixed discount
+   - If customer is a teacher AND promo code is ’TEACHER10’, apply 10% discount to total purchase
+   - If promo code is ’BULK10’ AND total spend is at least $200, apply 10% discount to total purchase
+   - If total spend is at least $150, apply 5% discount to total purchase
+   - If total spend is at least $200, apply 10% discount to total purchase
+   - If cart contains electronics items AND total electronics spend is $300 or greater, apply 10% discount on electronics
+    items only
+   - If cart contains clothing items AND total clothing spend is $75 or greater, apply 10% discount on clothing items
+    only
+   - If cart contains books items AND total books spend is $45 or greater, apply 10% discount on books items only
+   - If cart contains food items AND total food spend is $30 or greater, apply 10% discount on food items only
+   - If cart contains home items AND total home spend is $60 or greater, apply 10% discount on home items only
+   - If cart contains sports items AND total sports spend is $90 or greater, apply 10% discount on sports items only
+   - If cart contains beauty items AND total beauty spend is $52 or greater, apply 10% discount on beauty items only
+   - If cart contains health items AND total health spend is $75 or greater, apply 10% discount on health items only
+   - If customer has been a member for 1 or more years, apply 5% discount to total purchase
+   - If customer has been a member for 3 or more years, apply 10% discount to total purchase
+   - If customer has been a member for 5 or more years, apply 15% discount to total purchase
+
+
+Some of the example context units that the natural language context may decompose into for this domain include:
+["If customer is a student AND total spend is at least $50, apply 10% discount to total
+    purchase",
+ "If customer is a senior citizen AND total spend is at least $50, apply 15% discount to
+     total purchase",
+ "If customer is an employee AND total spend is at least $50, apply 20% discount to total
+     purchase",
+ ...]
+
+
+
+
+                                                            13
+                                 Sample-Efficient Parametric Learning from Natural Language
+
+B.2. RuleArena (NBA)
+Quoting the original description of this domain from the benchmark: ”It requires LLMs to determine whether one or more
+specified transactions are allowed. The regulations are extracted from the 2023 NBA Collective Bargaining Agreements
+(CBA) and excerpt from the NBA Constitution and ByLaws. Complexity arises from the numerous factors influencing
+transaction eligibility, including the player’s contract value, salary-matching constraints, and the specific transaction date.
+LLMs must accurately identify and apply the relevant rules from the agreement to determine whether a given transaction
+can proceed” (Zhou et al., 2025).
+
+    NBA Example Query
+
+    QUESTION:
+    Team Situations:
+    Team A has a team salary of $130,000,000.
+    Team B has a team salary of $135,000,000.
+    Team C has a team salary of $98,000,000.
+
+    Player Situations: Player A was the 33th second-round pick of Team B in 2022 NBA draft when he was 20 years old.
+    Player A signed a 2-year contract with Team B providing the minimum salary.
+    Player B was the 44th second-round pick of Team C in 2015 NBA draft when he was 22 years old.
+    Player B signed a 3-year contract with Team B providing annual salary $31,000,000, 5% increase per year in 2021
+    Cap Year.
+    Player C was the 21th first-round pick of Team C in 2016 NBA draft when he was 22 years old.
+    Player C signed a 2-year contract with Team B providing annual salary $7,000,000, 5% increase per year in 2022
+    Cap Year.
+    Player D was the 15th first-round pick of Team D in 2017 NBA draft when he was 22 years old.
+    Player D signed a 3-year contract with Team D providing annual salary $10,000,000, 5% increase per year in 2021
+    Cap Year.
+
+    Operations: A. Team B provides a qualifying offer for Player A.
+    B. Team A provides Player A with an offer sheet - a 2-year contract providing annual salary $10,000,000 in the first
+    Salary Cap Year (2024-2025), 5% increase per year for the first two Salary Cap Years.
+    C. Team B matches the offer by team A.
+    D. Team B signs a 2-year contract with Player D providing annual salary $5,000,000 in the first Salary Cap Year
+    (2024-2025), 5% increase per year.
+    E. Team C signs a 2-year contract with Player C providing annual salary $7,000,000 in the first Salary Cap Year
+    (2024-2025), 5% increase per year.
+
+
+The full set of rules for this domain is too large to include in the paper, thus we direct readers to the official repository here:
+https://github.com/SkyRiver-2000/RuleArena/blob/main/nba/reference_rules.txt.
+Some of the example context units that the natural language context may decompose into for this domain include:
+["the Team shall be prohibited from trading (either conditionally or unconditionally) its
+    first round draft pick in the first NBA Draft that occurs following the seventh
+    Season that follows the Season occurring within such Salary Cap Year;", "A Team may
+    use the Taxpayer Mid-Level Salary Exception to sign one (1) or more Player Contracts
+    during each Salary Cap Year not to exceed two (2) Seasons in length, that, in the
+    aggregate, provide for Salaries and Unlikely Bonuses in the first Salary Cap Year
+    totaling up to the amounts set forth below, provided that the Team’s Team Salary
+    immediately following the Team’s use of such Exception exceeds the First Apron
+    Level:", "Player Contracts signed pursuant to the Mid-Level Salary Exception for Room
+    Teams may provide for annual increases and decreases in Salary and Unlikely Bonuses
+    in accordance with Section 5(a)(1) above.", ...]
+
+
+
+
+                                                               14
+                               Sample-Efficient Parametric Learning from Natural Language
+
+B.3. MTOB
+The Machine Translation from One Book (MTOB) benchmark (Tanzer et al., 2024) tests a model’s ability to translate
+between English and Kalamang, an extremely low-resource language for which very few resources exist on the internet
+(essentially a single grammar book) that they curate into the data provided in this benchmark.
+We make use of their medium sized version of this grammar book for our natural language context in this task, which
+comprises of approximately 50K tokens that include a grammar table and numerous word mappings. We also include a
+corpus of approximately 375 paired English-Kalamang sentences. We use RoPE scaling to extend the model’s context
+window for ICL baseline evaluations.
+We refrain from including example queries and decompositions of the natural language corpus here as it is both too long but
+more importantly not recommended to prevent leakage in the benchmark. At a high level though, in this setting the context
+units include both groups of word translations, individual grammar rules, and example sentences.
+
+C. Synthetic Data Prompts
+Below we provide the general prompts used for all domains in S IEVE (that fit within context).
+
+C.1. Decomposition Prompt
+
+    Decomposition Prompt
+
+    Break down the following feedback/guidelines/knowledge into atomic, independent items.
+
+   Each atomic item should:
+   1. Express a single, self-contained rule, fact, definition, or example
+   2. Be evaluable independently (can determine if it applies without needing other items)
+   3. Preserve the exact meaning and wording from the original
+
+    Content:
+    {chunk}
+
+    Output each atomic item separated by ”###” on its own line.
+    For items with sub-bullets or multiple lines, include all lines as part of that item. Do NOT number or label items. Do
+    not add explanations or commentary.
+
+   Example format:
+   First item content here
+   ###
+   Second item content here
+   ###
+   Third item content here
+
+    Do not group multiple concepts together. Each item should be atomic.
+
+
+
+
+                                                             15
+                               Sample-Efficient Parametric Learning from Natural Language
+
+C.2. Seed Context Selection Prompt (Base Model)
+
+   Seed Context Selection Prompt
+
+   Task: Select 3-5 guidelines from the natural language feedback that could apply together to a single scenario/question.
+
+   Guidelines:
+   {feedback}
+   {examples section}
+   Selected guidelines:
+   -
+
+
+
+C.3. Query Generation Prompt
+
+   Query Generation Prompt
+
+   Generate a realistic question where the following feedback/guidelines/knowledge would apply:
+
+   {selected feedback}
+
+   Instructions:
+   1. Create a specific question where the information applies, similar to the format of the examples below
+   2. Make it realistic
+   3. Include all necessary details
+   4. Output ONLY the question, nothing else
+
+   {examples section}
+
+   Question:
+
+
+
+
+                                                             16
+
