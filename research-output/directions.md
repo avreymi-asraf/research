@@ -34,6 +34,11 @@ Status legend: [open] not done, [partial] touched, [done] resolved in report.
 - OPCD code: aka.ms/opcd-code (not opened; announced in paper)
 - Tinker cookbook recipe prompt_distillation (create_data.py, train.py)
 
+## Notes after the own experiment (E1)
+- Results: 0.5B no replay (student 58.3/60.8 vs teacher 63.3/56.7; 80% leakage), 0.5B +60 replay (53.3/51.7; 0% leakage), 1.5B no replay (student 74.2/78.3 vs teacher 73.3/69.2; 60% leakage; rules re-added 68.3/69.2). Single seed, n=120 per split.
+- Known flaws to fix before trusting: replay answers truncated at 40 tokens then end-of-turn appended (may teach early stopping); templated synthetic inputs; 1.5B teacher's 10% invalid-format outputs were silently filtered, which partly explains student >= teacher; no soft-label arm; no gold-label control arm.
+- report.md could not be written by the sub-agent (tool refused); the full report was returned as the final message text instead.
+
 ## Next experiments (if continuing)
 - Scale the own experiment: 3 seeds, N in {50, 200, 800}, hard vs. soft labels, with/without replay of general prompts, 1.5B vs 0.5B.
 - Add a re-introduction test with a SHORT reminder prompt (Askell: short prompt after distillation).

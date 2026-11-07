@@ -1,0 +1,40 @@
+{
+ "model": "Qwen/Qwen2.5-1.5B-Instruct",
+ "n_train": 200,
+ "epochs": 3,
+ "replay": 0,
+ "teacher_train_label_invalid_rate": 0.1,
+ "teacher_acc_on_train_inputs": 0.735,
+ "teacher_prompted_id": 0.7333333333333333,
+ "base_noprompt_id": 0.0,
+ "base_noprompt_invalid_id": 1.0,
+ "teacher_prompted_ood": 0.6916666666666667,
+ "base_noprompt_ood": 0.0,
+ "base_noprompt_invalid_ood": 1.0,
+ "t_baselines_s": 514.1796798706055,
+ "n_train_used": 180,
+ "final_loss": 0.04170138835906982,
+ "t_train_s": 938.0374326705933,
+ "student_noprompt_id": 0.7416666666666667,
+ "student_noprompt_invalid_id": 0.0,
+ "student_with_rules_reintroduced_id": 0.6833333333333333,
+ "student_noprompt_ood": 0.7833333333333333,
+ "student_noprompt_invalid_ood": 0.0,
+ "student_with_rules_reintroduced_ood": 0.6916666666666667,
+ "general_q_answered_with_label": 0.6,
+ "general_q_samples": [
+  "Paris",
+  "Raindrops falling",
+  "OTHER",
+  "OTHER",
+  "OTHER"
+ ],
+ "general_q_base_samples": [
+  "The capital of France is Paris.",
+  "Raindrops fall,\nNature's soothing melody,\nLife refreshed.",
+  "The sum of 17 and 25 is",
+  "One effective tip for improving your sleep quality is to establish a",
+  "\"Good morning\" in Spanish is \"Buenos d\u00edas"
+ ],
+ "t_total_s": 1241.8966662883759
+}
