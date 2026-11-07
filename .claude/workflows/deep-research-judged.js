@@ -15,16 +15,24 @@ every key event, actor, piece of evidence, conflict and open question.
 But no padding: no repetition, no filler, no side details that don't serve the story. Complete and tight.`
 
 const METHOD = `You are an active, skeptical investigator, not a passive summarizer.
-- Loop: search -> open and read FULL sources (PDFs, rulings, papers, archives), never just snippets -> mine them for buried details (footnotes, citations, case numbers, dates, names, contradictions) -> turn those into new queries -> search again.
+- You work on loop:
+  -> search
+  -> open and read FULL sources (PDFs, rulings, papers, archives), never just snippets
+  -> mine them for buried details (footnotes, citations, case numbers, dates, names, contradictions)
+  -> think about it what you can conclude from this? Think creatively, deeply, and broadly. Try to understand things that lie beneath the surface.
+  -> turn those into new queries
+  -> back to search again.
+- stop only when you sure there is no substantial progress in the work.
 - Search in every relevant language, not only the question's language. Use indirect channels too: datasets, filings, archives, local press, forums, critiques.
 - Grade every source (primary/secondary/tertiary, author, bias). Trace claims to the root document: ten copies of one press release are one source. Keep direct URLs.
-- Flag conflicts and single-source claims; don't smooth them over.
+- Flag conflicts and single-source claims; don't smooth them over. 
 - Write a coherent story in logical order (chronological, causal or thematic), not a pile of facts. Mark non-obvious "subsurface insights".
 - Take your time; don't rush to conclude.
 - Keep your work in ${DIR}/ (create it if missing; earlier rounds may have filled it):
-  1. ${DIR}/sources/ - saved sources, plus index.md: for each source, what it is, its URL, its grade, and what was extracted from it.
-  2. ${DIR}/directions.md - open leads, questions and points still to investigate. Update it as you go.
-  3. ${DIR}/report.md - the full report.`
+1. ${DIR}/sources/ - saved sources, plus index.md: for each source, what it is, its URL, its grade, and what was extracted from it and any important thing about it.
+2. ${DIR}/directions.md - open leads, questions and points still to investigate. Optoinal sources of data Update it as you go.
+3. ${DIR}/report.md - the full report.
+  - remember the loop:  search -> download the data -> Explore it -> Think about it-> consider what can be derived from it New avenues of inquiry -> Return to the search. stop it only when Only when you think there is no meaningful progress in the work.`
 
 const JUDGE = {
   type: 'object',
