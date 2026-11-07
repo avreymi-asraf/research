@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-# Wrapper: run fetch_source.py in isolated mode, using the optional venv (with pypdf) if present.
-# Usage: deep_research/bin/fetch_source [--workspace DIR] [--force] <S###> <URL> [slug]
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PY="$HERE/.venv/bin/python"
-[ -x "$PY" ] || PY="$(command -v python3)"
-# -I: ignore cwd / user site so nothing planted next to downloads can be imported.
-# With a venv, -I still keeps the venv's own site-packages.
-exec "$PY" -I "$HERE/fetch_source.py" "$@"
