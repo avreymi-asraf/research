@@ -1,0 +1,37 @@
+
+## E5 instruct student (Qwen2.5-0.5B-Instruct)  (seeds: [0, 1, 2])
+arm | n | id | ood | ood_unwrapped | leak_unrelated | leak_lookalike | qa_ok | inj_valid_label | inj_correct | inj2_valid_label | inj2_correct
+teacher_hard | 3 | 55.0 (44-62) | 56.0 (50-62) | - | 76.7 (60-100) | 100.0 (100-100) | 50.0 (0-83) | 100.0 (100-100) | 39.4 (37-45) | 100.0 (100-100) | 43.3 (38-47)
+enh_teacher | 3 | 87.2 (83-94) | 83.7 (76-92) | - | 100.0 (100-100) | 100.0 (100-100) | 5.6 (0-17) | 100.0 (100-100) | 44.4 (23-73) | 100.0 (100-100) | 65.0 (43-93)
+enh5 | 1 | 25.5 | 26.5 | - | 100.0 | 100.0 | 0.0 | 100.0 | 36.7 | 100.0 | 36.7
+enh50 | 1 | 98.5 | 89.5 | - | 100.0 | 100.0 | 0.0 | 100.0 | 60.0 | 100.0 | 88.3
+bias20 | 3 | 55.7 (46-64) | 51.3 (46-60) | - | 66.7 (50-90) | 100.0 (100-100) | 47.2 (8-75) | 98.3 (95-100) | 29.4 (18-42) | 97.8 (93-100) | 35.0 (27-42)
+gold20 | 3 | 38.3 (32-50) | 33.7 (26-46) | - | 63.3 (50-80) | 100.0 (100-100) | 36.1 (0-92) | 100.0 (100-100) | 36.7 (20-52) | 73.9 (48-100) | 25.6 (25-27)
+gold50 | 3 | 73.8 (66-80) | 73.5 (70-76) | - | 73.3 (50-90) | 98.1 (94-100) | 25.0 (8-50) | 93.3 (80-100) | 24.4 (17-38) | 75.0 (25-100) | 30.0 (23-35)
+delim_hard | 3 | 53.8 (48-57) | 54.8 (49-60) | 57.3 (54-60) | 70.0 (60-80) | 100.0 (100-100) | 30.6 (17-42) | 100.0 (100-100) | 32.8 (30-37) | 100.0 (100-100) | 36.1 (32-40)
+delim_negrep | 3 | 57.3 (48-66) | 60.0 (58-62) | 56.5 (51-60) | 0.0 (0-0) | 16.7 (0-33) | 91.7 (83-100) | 61.7 (7-92) | 23.9 (3-38) | 52.2 (2-100) | 26.1 (2-52)
+hard_negrep | 3 | 56.3 (50-62) | 54.7 (52-58) | - | 0.0 (0-0) | 18.5 (11-22) | 100.0 (100-100) | 0.0 (0-0) | 0.0 (0-0) | 0.0 (0-0) | 0.0 (0-0)
+enh20bal | 3 | 84.2 (84-84) | 79.3 (78-81) | - | 93.3 (90-100) | 100.0 (100-100) | 5.6 (0-17) | 100.0 (100-100) | 43.3 (17-60) | 100.0 (100-100) | 62.2 (53-70)
+delim_negrep_inj | 3 | 54.3 (52-58) | 53.8 (46-61) | 46.3 (26-62) | 0.0 (0-0) | 13.0 (0-33) | 97.2 (92-100) | 100.0 (100-100) | 46.1 (40-58) | 99.4 (98-100) | 47.2 (42-57)
+teacher side:
+ seed 0: teacher label acc 0.59 balance {'BUG': 89, 'BILLING': 17, 'SCHEDULE': 3, 'OTHER': 90, 'INVALID': 1} | prompted test 0.63/0.415 inj 0.65/0.2833333333333333 inj2 0.03333333333333333/0.0
+   enh_teacher: labels 0.83 {'BUG': 66, 'BILLING': 56, 'SCHEDULE': 8, 'OTHER': 70, 'INVALID': 0} test 0.845/0.655
+   enh5: labels 0.275 {'BUG': 0, 'BILLING': 0, 'SCHEDULE': 0, 'OTHER': 200, 'INVALID': 0} test 0.255/0.265
+   enh50: labels 0.995 {'BUG': 65, 'BILLING': 49, 'SCHEDULE': 32, 'OTHER': 54, 'INVALID': 0} test 0.99/0.825
+   bias20: 0.655 {'BUG': 47, 'BILLING': 37, 'SCHEDULE': 21, 'OTHER': 95, 'INVALID': 0}
+ seed 1: teacher label acc 0.61 balance {'BUG': 96, 'BILLING': 24, 'SCHEDULE': 3, 'OTHER': 75, 'INVALID': 2} | prompted test 0.56/0.52 inj 0.5/0.2 inj2 0.05/0.0
+   enh_teacher: labels 0.865 {'BUG': 67, 'BILLING': 40, 'SCHEDULE': 30, 'OTHER': 63, 'INVALID': 0} test 0.885/0.745
+   bias20: 0.585 {'BUG': 64, 'BILLING': 39, 'SCHEDULE': 1, 'OTHER': 96, 'INVALID': 0}
+ seed 2: teacher label acc 0.555 balance {'BUG': 94, 'BILLING': 15, 'SCHEDULE': 4, 'OTHER': 87, 'INVALID': 0} | prompted test 0.57/0.58 inj 0.55/0.11666666666666667 inj2 0.1/0.0
+   enh_teacher: labels 0.835 {'BUG': 63, 'BILLING': 49, 'SCHEDULE': 2, 'OTHER': 86, 'INVALID': 0} test 0.84/0.705
+   bias20: 0.65 {'BUG': 59, 'BILLING': 77, 'SCHEDULE': 0, 'OTHER': 64, 'INVALID': 0}
+
+## E5 base-model student (Qwen2.5-0.5B base), teacher = prompted / enhanced instruct model  (seeds: [0, 1, 2])
+arm | n | id | ood | ood_unwrapped | leak_unrelated | leak_lookalike | qa_ok | inj_valid_label | inj_correct | inj2_valid_label | inj2_correct
+base_hard | 3 | 54.5 (52-57) | 55.0 (46-64) | - | 100.0 (100-100) | 100.0 (100-100) | 0.0 (0-0) | 100.0 (100-100) | 39.4 (38-40) | 100.0 (100-100) | 43.9 (32-62)
+base_enh | 3 | 87.0 (82-92) | 82.2 (78-89) | - | 100.0 (100-100) | 100.0 (100-100) | 0.0 (0-0) | 100.0 (100-100) | 50.0 (32-73) | 100.0 (100-100) | 63.3 (55-73)
+inst_hard_prefix | 3 | 51.5 (44-60) | 51.8 (44-56) | - | 80.0 (60-100) | 100.0 (100-100) | 33.3 (0-83) | 100.0 (100-100) | 37.8 (28-45) | 100.0 (100-100) | 40.0 (37-45)
+teacher side:
+ seed 0: teacher label acc None balance None | prompted test None/None inj None/None inj2 None/None
+ seed 1: teacher label acc None balance None | prompted test None/None inj None/None inj2 None/None
+ seed 2: teacher label acc None balance None | prompted test None/None inj None/None inj2 None/None

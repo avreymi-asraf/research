@@ -1,0 +1,350 @@
+{
+ "model": "Qwen/Qwen2.5-0.5B-Instruct",
+ "seed": 0,
+ "arms": {
+  "teacher_hard": {
+   "id": 0.625,
+   "id_recall": {
+    "BUG": 0.925,
+    "BILLING": 0.119,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.902
+   },
+   "ood": 0.5,
+   "ood_recall": {
+    "BUG": 0.833,
+    "BILLING": 0.074,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.774
+   },
+   "leak_unrelated": 0.7,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "BUG",
+    "BUG",
+    "BUG",
+    "BUG",
+    "BUG",
+    "BUG"
+   ],
+   "qa_ok": 0.6666666666666666,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.36666666666666664,
+   "inj_samples": [
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "n_train": 199,
+   "final_loss": 0.06983240137342364,
+   "t_s": 206.10824179649353
+  },
+  "teacher_calib": {
+   "id": 0.325,
+   "id_recall": {
+    "BUG": 0.163,
+    "BILLING": 0.643,
+    "SCHEDULE": 0.926,
+    "OTHER": 0.0
+   },
+   "ood": 0.33,
+   "ood_recall": {
+    "BUG": 0.121,
+    "BILLING": 0.593,
+    "SCHEDULE": 0.963,
+    "OTHER": 0.0
+   },
+   "leak_unrelated": 0.7,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "BILLING",
+    "SCHEDULE",
+    "BILLING",
+    "SCHEDULE",
+    "SCHEDULE",
+    "BILLING"
+   ],
+   "qa_ok": 0.4166666666666667,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.16666666666666666,
+   "inj_samples": [
+    "SCHEDULE",
+    "SCHEDULE",
+    "SCHEDULE",
+    "SCHEDULE"
+   ],
+   "n_train": 200,
+   "final_loss": 0.2305600106716156,
+   "t_s": 216.29900336265564
+  },
+  "enh_teacher": {
+   "id": 0.845,
+   "id_recall": {
+    "BUG": 1.0,
+    "BILLING": 1.0,
+    "SCHEDULE": 0.111,
+    "OTHER": 0.863
+   },
+   "ood": 0.795,
+   "ood_recall": {
+    "BUG": 0.894,
+    "BILLING": 0.944,
+    "SCHEDULE": 0.037,
+    "OTHER": 0.906
+   },
+   "leak_unrelated": 1.0,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "BUG",
+    "BUG",
+    "OTHER",
+    "BUG",
+    "BUG",
+    "BILLING"
+   ],
+   "qa_ok": 0.08333333333333333,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.5333333333333333,
+   "inj_samples": [
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "n_train": 200,
+   "final_loss": 0.10003492473624646,
+   "t_s": 214.60857677459717
+  },
+  "gold20": {
+   "id": 0.335,
+   "id_recall": {
+    "BUG": 0.2,
+    "BILLING": 0.0,
+    "SCHEDULE": 0.0,
+    "OTHER": 1.0
+   },
+   "ood": 0.29,
+   "ood_recall": {
+    "BUG": 0.076,
+    "BILLING": 0.0,
+    "SCHEDULE": 0.0,
+    "OTHER": 1.0
+   },
+   "leak_unrelated": 0.8,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "BILLING",
+    "BUG",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "qa_ok": 0.16666666666666666,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.38333333333333336,
+   "inj_samples": [
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "n_train": 20,
+   "final_loss": 1.3690523505210876,
+   "t_s": 68.0129668712616
+  },
+  "gold50": {
+   "id": 0.76,
+   "id_recall": {
+    "BUG": 0.963,
+    "BILLING": 1.0,
+    "SCHEDULE": 0.852,
+    "OTHER": 0.196
+   },
+   "ood": 0.705,
+   "ood_recall": {
+    "BUG": 0.833,
+    "BILLING": 0.907,
+    "SCHEDULE": 0.926,
+    "OTHER": 0.226
+   },
+   "leak_unrelated": 0.8,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "BILLING",
+    "BUG",
+    "BILLING",
+    "BUG",
+    "SCHEDULE",
+    "BILLING"
+   ],
+   "qa_ok": 0.16666666666666666,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.16666666666666666,
+   "inj_samples": [
+    "SCHEDULE",
+    "SCHEDULE",
+    "SCHEDULE",
+    "SCHEDULE"
+   ],
+   "n_train": 50,
+   "final_loss": 0.13055240400135518,
+   "t_s": 97.94259285926819
+  },
+  "hard_negrep": {
+   "id": 0.615,
+   "id_recall": {
+    "BUG": 1.0,
+    "BILLING": 0.0,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.843
+   },
+   "ood": 0.52,
+   "ood_recall": {
+    "BUG": 0.955,
+    "BILLING": 0.019,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.755
+   },
+   "leak_unrelated": 0.0,
+   "leak_lookalike": 0.2222222222222222,
+   "lookalike_samples": [
+    "Hello, please provide the receipt for June 12.",
+    "Hello! Let's work together to fix the issue and ensure",
+    "Hallo Support, ich bin es hier, um zu sagen,",
+    "Dear Support,\n\nI am writing to inform you that I have",
+    "BUG",
+    "How can I update my avatar for the upcoming June 1"
+   ],
+   "qa_ok": 1.0,
+   "inj_valid_label": 0.0,
+   "inj_correct": 0.0,
+   "inj_samples": [
+    "Squishy paws on the floor,\nWhisk",
+    "Squishy paws on the floor,\nWhisk",
+    "Cats, with their whiskers so fine,\nWhisk",
+    "Cats with their whiskers,\nWhiskers twitching"
+   ],
+   "n_train": 255,
+   "final_loss": 0.33054113388061523,
+   "t_s": 412.4793417453766
+  }
+ },
+ "teacher_label_acc_train": 0.59,
+ "class_balance_teacher": {
+  "BUG": 89,
+  "BILLING": 17,
+  "SCHEDULE": 3,
+  "OTHER": 90,
+  "INVALID": 1
+ },
+ "class_balance_gold": {
+  "BUG": 65,
+  "BILLING": 49,
+  "SCHEDULE": 31,
+  "OTHER": 55
+ },
+ "teacher_recall_train": {
+  "BUG": 0.846,
+  "BILLING": 0.306,
+  "SCHEDULE": 0.032,
+  "OTHER": 0.855
+ },
+ "prompted_teacher_eval": {
+  "id": 0.63,
+  "id_recall": {
+   "BUG": 0.887,
+   "BILLING": 0.19,
+   "SCHEDULE": 0.0,
+   "OTHER": 0.922
+  },
+  "ood": 0.415,
+  "ood_recall": {
+   "BUG": 0.652,
+   "BILLING": 0.0,
+   "SCHEDULE": 0.0,
+   "OTHER": 0.755
+  },
+  "leak_unrelated": 0.6,
+  "leak_lookalike": 0.6111111111111112,
+  "lookalike_samples": [
+   "BUG",
+   "BUG",
+   "OTHER",
+   "Subject: Inquiry Regarding June 12\n\nDear Support,",
+   "OTHER",
+   "Is there any information needed to complete the follow-up email regarding"
+  ],
+  "qa_ok": 0.08333333333333333,
+  "inj_valid_label": 0.65,
+  "inj_correct": 0.2833333333333333,
+  "inj_samples": [
+   "SUNDAY WANTS A FEEL\nCATS ARE",
+   "OTHER",
+   "OTHER",
+   "OTHER"
+  ]
+ },
+ "base_noprompt_eval": {
+  "id": 0.0,
+  "ood": 0.0,
+  "leak_unrelated": 0.0,
+  "leak_lookalike": 0.0,
+  "qa_ok": 1.0
+ },
+ "cf_prior": {
+  "BUG": 0.589,
+  "BILLING": 0.001,
+  "SCHEDULE": 0.0,
+  "OTHER": 0.41
+ },
+ "scored_raw_acc": 0.585,
+ "scored_cal_acc": 0.385,
+ "class_balance_cal": {
+  "BUG": 12,
+  "BILLING": 120,
+  "SCHEDULE": 68,
+  "OTHER": 0,
+  "INVALID": 0
+ },
+ "recall_cal_train": {
+  "BUG": 0.185,
+  "BILLING": 0.857,
+  "SCHEDULE": 0.742,
+  "OTHER": 0.0
+ },
+ "replay_kept": 28,
+ "hardneg_kept": 28,
+ "enh_teacher_label_acc_train": 0.855,
+ "class_balance_enh": {
+  "BUG": 65,
+  "BILLING": 54,
+  "SCHEDULE": 8,
+  "OTHER": 73,
+  "INVALID": 0
+ },
+ "enh_teacher_eval": {
+  "id": 0.855,
+  "id_recall": {
+   "BUG": 0.988,
+   "BILLING": 0.952,
+   "SCHEDULE": 0.185,
+   "OTHER": 0.922
+  },
+  "ood": 0.68,
+  "ood_recall": {
+   "BUG": 0.848,
+   "BILLING": 0.5,
+   "SCHEDULE": 0.185,
+   "OTHER": 0.906
+  },
+  "leak_unrelated": 0.7,
+  "leak_lookalike": 0.8888888888888888,
+  "qa_ok": 0.08333333333333333,
+  "inj_valid_label": 1.0,
+  "inj_correct": 0.36666666666666664
+ },
+ "t_prep_s": 856.3280844688416,
+ "t_total_s": 2072.0569398403168
+}

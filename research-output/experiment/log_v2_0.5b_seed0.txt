@@ -1,3 +1,15 @@
 Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:  39%|███▉      | 113/290 [00:00<00:00, 1113.35it/s]Loading weights:  80%|████████  | 233/290 [00:00<00:00, 1104.11it/s]Loading weights: 100%|██████████| 290/290 [00:00<00:00, 1034.90it/s]
 prep done 475.0003414154053
 Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:   0%|          | 1/290 [00:00<00:43,  6.66it/s]Loading weights: 100%|██████████| 290/290 [00:00<00:00, 1183.04it/s]
+teacher_hard {'id': 0.625, 'id_invalid': 0.0, 'id_rules_back': 0.605, 'ood': 0.5, 'ood_invalid': 0.0, 'ood_rules_back': 0.475, 'leak_label_rate': 0.8, 'qa_ok': 0.6666666666666666, 'n_train': 199, 'final_loss': 0.06983240060508251, 't_s': 319.15001010894775}
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:   0%|          | 1/290 [00:00<00:37,  7.76it/s]Loading weights: 100%|██████████| 290/290 [00:00<00:00, 1271.36it/s]
+teacher_soft {'id': 0.645, 'id_invalid': 0.0, 'ood': 0.535, 'ood_invalid': 0.0, 'leak_label_rate': 0.6666666666666666, 'qa_ok': 0.0, 'n_train': 199, 'final_loss': 0.4983235657215118, 't_s': 256.04123067855835}
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:   0%|          | 1/290 [00:00<00:49,  5.88it/s]Loading weights: 100%|██████████| 290/290 [00:00<00:00, 1136.49it/s]
+agree {'id': 0.425, 'id_invalid': 0.005, 'ood': 0.34, 'ood_invalid': 0.0, 'leak_label_rate': 0.8, 'qa_ok': 0.25, 'n_train': 77, 'final_loss': 0.15845009889453648, 't_s': 110.08499813079834}
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:   0%|          | 1/290 [00:00<00:46,  6.19it/s]Loading weights: 100%|██████████| 290/290 [00:00<00:00, 1120.44it/s]
+gold200 {'id': 0.995, 'id_invalid': 0.0, 'id_rules_back': 0.975, 'ood': 0.91, 'ood_invalid': 0.0, 'ood_rules_back': 0.84, 'leak_label_rate': 1.0, 'qa_ok': 0.08333333333333333, 'n_train': 200, 'final_loss': 0.005775034427642822, 't_s': 334.7812330722809}
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:   0%|          | 1/290 [00:00<00:42,  6.84it/s]Loading weights: 100%|██████████| 290/290 [00:00<00:00, 1207.27it/s]
+gold20 {'id': 0.335, 'id_invalid': 0.0, 'ood': 0.29, 'ood_invalid': 0.0, 'leak_label_rate': 0.8666666666666667, 'qa_ok': 0.16666666666666666, 'n_train': 20, 'final_loss': 1.3690523505210876, 't_s': 60.95990252494812}
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:   0%|          | 1/290 [00:00<00:31,  9.15it/s]Loading weights: 100%|██████████| 290/290 [00:00<00:00, 1536.68it/s]
+hard_replay {'id': 0.625, 'id_invalid': 0.0, 'ood': 0.55, 'ood_invalid': 0.0, 'leak_label_rate': 0.13333333333333333, 'qa_ok': 1.0, 'n_train': 227, 'final_loss': 0.10289896298199892, 't_s': 351.95190048217773}
+DONE 1908.2724058628082

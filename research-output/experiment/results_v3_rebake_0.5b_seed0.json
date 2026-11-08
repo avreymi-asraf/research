@@ -1,0 +1,70 @@
+{
+ "model": "Qwen/Qwen2.5-0.5B-Instruct",
+ "seed": 0,
+ "teacher_v1_on_test": {
+  "v1_all": 0.59,
+  "v2_all": 0.38,
+  "n_conflict": 59,
+  "v1_conflict": 0.8135593220338984,
+  "v2_conflict": 0.1016949152542373,
+  "invalid": 0.0
+ },
+ "teacher_v2_on_test": {
+  "v1_all": 0.7,
+  "v2_all": 0.42,
+  "n_conflict": 59,
+  "v1_conflict": 0.9491525423728814,
+  "v2_conflict": 0.0,
+  "invalid": 0.0
+ },
+ "base_noprompt": {
+  "v1_all": 0.0,
+  "v2_all": 0.0,
+  "n_conflict": 59,
+  "v1_conflict": 0.0,
+  "v2_conflict": 0.0,
+  "invalid": 1.0
+ },
+ "teacher_v1_label_acc_train": 0.615,
+ "teacher_v2_label_acc_train": 0.425,
+ "teacher_labels_differ_v1_v2": 0.145,
+ "gold_labels_differ_v1_v2": 0.215,
+ "teacher_v1_confusion_train": {
+  "SCHEDULE->BUG": 9,
+  "BILLING->BUG": 22,
+  "BUG->BUG": 83,
+  "SCHEDULE->OTHER": 21,
+  "BILLING->BILLING": 13,
+  "OTHER->OTHER": 24,
+  "BILLING->OTHER": 13,
+  "SCHEDULE->SCHEDULE": 3,
+  "BUG->OTHER": 6,
+  "OTHER->BUG": 5,
+  "BILLING->SCHEDULE": 1
+ },
+ "A_bake_v1": {
+  "v1_all": 0.63,
+  "v2_all": 0.345,
+  "n_conflict": 59,
+  "v1_conflict": 0.9661016949152542,
+  "v2_conflict": 0.0,
+  "invalid": 0.0
+ },
+ "B_v1_then_rebake_v2": {
+  "v1_all": 0.6,
+  "v2_all": 0.305,
+  "n_conflict": 59,
+  "v1_conflict": 1.0,
+  "v2_conflict": 0.0,
+  "invalid": 0.0
+ },
+ "C_fresh_bake_v2": {
+  "v1_all": 0.665,
+  "v2_all": 0.39,
+  "n_conflict": 59,
+  "v1_conflict": 0.9661016949152542,
+  "v2_conflict": 0.03389830508474576,
+  "invalid": 0.0
+ },
+ "t_total_s": 854.3885867595673
+}

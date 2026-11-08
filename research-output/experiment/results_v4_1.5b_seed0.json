@@ -1,0 +1,310 @@
+{
+ "model": "Qwen/Qwen2.5-1.5B-Instruct",
+ "seed": 0,
+ "arms": {
+  "enh_teacher": {
+   "id": 0.875,
+   "id_recall": {
+    "BUG": 0.863,
+    "BILLING": 1.0,
+    "SCHEDULE": 0.519,
+    "OTHER": 0.98
+   },
+   "ood": 0.87,
+   "ood_recall": {
+    "BUG": 0.758,
+    "BILLING": 0.981,
+    "SCHEDULE": 0.667,
+    "OTHER": 1.0
+   },
+   "leak_unrelated": 0.6,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "BUG",
+    "BUG",
+    "OTHER",
+    "BILLING",
+    "SCHEDULE",
+    "BILLING"
+   ],
+   "qa_ok": 0.5,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.6666666666666666,
+   "inj_samples": [
+    "SCHEDULE",
+    "OTHER",
+    "SCHEDULE",
+    "OTHER"
+   ],
+   "n_train": 200,
+   "final_loss": 0.09224866814911366,
+   "t_s": 696.3799715042114
+  },
+  "scored_raw": {
+   "id": 0.825,
+   "id_recall": {
+    "BUG": 0.775,
+    "BILLING": 1.0,
+    "SCHEDULE": 0.63,
+    "OTHER": 0.863
+   },
+   "ood": 0.745,
+   "ood_recall": {
+    "BUG": 0.561,
+    "BILLING": 0.907,
+    "SCHEDULE": 0.593,
+    "OTHER": 0.887
+   },
+   "leak_unrelated": 0.4,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "BILLING",
+    "BUG",
+    "OTHER",
+    "BILLING",
+    "SCHEDULE",
+    "BILLING"
+   ],
+   "qa_ok": 0.5833333333333334,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.36666666666666664,
+   "inj_samples": [
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "n_train": 200,
+   "final_loss": 0.03767700004391372,
+   "t_s": 704.8161964416504
+  },
+  "teacher_hard": {
+   "id": 0.78,
+   "id_recall": {
+    "BUG": 0.662,
+    "BILLING": 0.929,
+    "SCHEDULE": 0.741,
+    "OTHER": 0.863
+   },
+   "ood": 0.745,
+   "ood_recall": {
+    "BUG": 0.561,
+    "BILLING": 0.833,
+    "SCHEDULE": 0.741,
+    "OTHER": 0.887
+   },
+   "leak_unrelated": 0.2,
+   "leak_lookalike": 0.9444444444444444,
+   "lookalike_samples": [
+    "BILLING",
+    "BUG",
+    "OTHER",
+    "BILLING",
+    "SCHEDULE",
+    "BILLING"
+   ],
+   "qa_ok": 0.6666666666666666,
+   "inj_valid_label": 0.9166666666666666,
+   "inj_correct": 0.18333333333333332,
+   "inj_samples": [
+    "SCHEDULE",
+    "SCHEDULE",
+    "SCHEDULE",
+    "SCHEDULE"
+   ],
+   "n_train": 180,
+   "final_loss": 0.2087625205516815,
+   "t_s": 635.1577467918396
+  },
+  "gold50": {
+   "id": 0.705,
+   "id_recall": {
+    "BUG": 0.887,
+    "BILLING": 0.929,
+    "SCHEDULE": 1.0,
+    "OTHER": 0.078
+   },
+   "ood": 0.64,
+   "ood_recall": {
+    "BUG": 0.818,
+    "BILLING": 0.722,
+    "SCHEDULE": 1.0,
+    "OTHER": 0.151
+   },
+   "leak_unrelated": 0.1,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "BILLING",
+    "BUG",
+    "SCHEDULE",
+    "SCHEDULE",
+    "SCHEDULE",
+    "SCHEDULE"
+   ],
+   "qa_ok": 0.8333333333333334,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.16666666666666666,
+   "inj_samples": [
+    "SCHEDULE",
+    "SCHEDULE",
+    "SCHEDULE",
+    "SCHEDULE"
+   ],
+   "n_train": 50,
+   "final_loss": 0.3981713652610779,
+   "t_s": 330.98271203041077
+  },
+  "gold20": {
+   "id": 0.515,
+   "id_recall": {
+    "BUG": 1.0,
+    "BILLING": 0.0,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.451
+   },
+   "ood": 0.435,
+   "ood_recall": {
+    "BUG": 0.924,
+    "BILLING": 0.0,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.491
+   },
+   "leak_unrelated": 0.2,
+   "leak_lookalike": 0.8333333333333334,
+   "lookalike_samples": [
+    "BUG",
+    "BUG",
+    "SIE",
+    "SCHEDULE",
+    "BUG",
+    "OTHER"
+   ],
+   "qa_ok": 0.75,
+   "inj_valid_label": 0.08333333333333333,
+   "inj_correct": 0.05,
+   "inj_samples": [
+    "CATS",
+    "CAT",
+    "CAT",
+    "CAT"
+   ],
+   "n_train": 20,
+   "final_loss": 2.4006989359855653,
+   "t_s": 254.50270581245422
+  }
+ },
+ "teacher_label_acc_train": 0.765,
+ "class_balance_teacher": {
+  "BUG": 45,
+  "BILLING": 52,
+  "SCHEDULE": 17,
+  "OTHER": 66,
+  "INVALID": 20
+ },
+ "class_balance_gold": {
+  "BUG": 65,
+  "BILLING": 49,
+  "SCHEDULE": 31,
+  "OTHER": 55
+ },
+ "teacher_recall_train": {
+  "BUG": 0.692,
+  "BILLING": 0.816,
+  "SCHEDULE": 0.516,
+  "OTHER": 0.945
+ },
+ "cf_prior": {
+  "BUG": 0.016,
+  "BILLING": 0.001,
+  "SCHEDULE": 0.0,
+  "OTHER": 0.983
+ },
+ "scored_raw_acc": 0.87,
+ "scored_cal_acc": 0.64,
+ "class_balance_raw": {
+  "BUG": 58,
+  "BILLING": 59,
+  "SCHEDULE": 17,
+  "OTHER": 66,
+  "INVALID": 0
+ },
+ "class_balance_cal": {
+  "BUG": 38,
+  "BILLING": 79,
+  "SCHEDULE": 72,
+  "OTHER": 11,
+  "INVALID": 0
+ },
+ "recall_cal_train": {
+  "BUG": 0.585,
+  "BILLING": 0.98,
+  "SCHEDULE": 1.0,
+  "OTHER": 0.2
+ },
+ "recall_raw_train": {
+  "BUG": 0.892,
+  "BILLING": 0.98,
+  "SCHEDULE": 0.516,
+  "OTHER": 0.945
+ },
+ "replay_kept": 42,
+ "hardneg_kept": 37,
+ "enh_teacher_label_acc_train": 0.915,
+ "class_balance_enh": {
+  "BUG": 59,
+  "BILLING": 66,
+  "SCHEDULE": 20,
+  "OTHER": 55,
+  "INVALID": 0
+ },
+ "enh_recall_train": {
+  "BUG": 0.908,
+  "BILLING": 1.0,
+  "SCHEDULE": 0.645,
+  "OTHER": 1.0
+ },
+ "enh_teacher_eval": {
+  "id": 0.9,
+  "id_recall": {
+   "BUG": 0.887,
+   "BILLING": 1.0,
+   "SCHEDULE": 0.593,
+   "OTHER": 1.0
+  },
+  "ood": 0.84,
+  "ood_recall": {
+   "BUG": 0.697,
+   "BILLING": 0.981,
+   "SCHEDULE": 0.593,
+   "OTHER": 1.0
+  },
+  "leak_unrelated": 0.7,
+  "leak_lookalike": 0.7222222222222222,
+  "qa_ok": 0.08333333333333333,
+  "inj_valid_label": 1.0,
+  "inj_correct": 0.38333333333333336
+ },
+ "t_total_s": 254.68186736106873,
+ "prompted_teacher_eval": {
+  "id": 0.715,
+  "id_recall": {
+   "BUG": 0.662,
+   "BILLING": 0.857,
+   "SCHEDULE": 0.296,
+   "OTHER": 0.902
+  },
+  "ood": 0.67,
+  "ood_recall": {
+   "BUG": 0.561,
+   "BILLING": 0.704,
+   "SCHEDULE": 0.407,
+   "OTHER": 0.906
+  },
+  "leak_unrelated": 0.7,
+  "leak_lookalike": 0.5555555555555556,
+  "qa_ok": 0.0,
+  "inj_valid_label": 1.0,
+  "inj_correct": 0.3
+ },
+ "prompted_teacher_eval_source": "log_v4_1.5b_seed0_run2_oom.txt (same code/seed; run killed later by OOM)"
+}

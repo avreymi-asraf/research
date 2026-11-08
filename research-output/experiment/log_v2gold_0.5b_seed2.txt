@@ -1,0 +1,5 @@
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:  31%|███       | 89/290 [00:00<00:00, 875.30it/s]Loading weights:  75%|███████▌  | 218/290 [00:00<00:00, 1114.89it/s]Loading weights: 100%|██████████| 290/290 [00:00<00:00, 1150.68it/s]
+gold50 {'id': 0.795, 'id_invalid': 0.005, 'ood': 0.76, 'ood_invalid': 0.01, 'leak_label_rate': 0.6666666666666666, 'qa_ok': 0.5, 'n_train': 50, 'final_loss': 0.3047708451747894, 't_s': 95.91677665710449}
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:   0%|          | 1/290 [00:00<00:37,  7.65it/s]Loading weights:  89%|████████▊ | 257/290 [00:00<00:00, 1317.61it/s]Loading weights: 100%|██████████| 290/290 [00:00<00:00, 1175.11it/s]
+gold100 {'id': 0.97, 'id_invalid': 0.0, 'ood': 0.89, 'ood_invalid': 0.0, 'leak_label_rate': 0.8666666666666667, 'qa_ok': 0.16666666666666666, 'n_train': 100, 'final_loss': 0.016837651934474708, 't_s': 145.4891712665558}
+DONE 241.51080131530762

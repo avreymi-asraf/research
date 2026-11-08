@@ -1,0 +1,673 @@
+{
+ "model": "Qwen/Qwen2.5-0.5B-Instruct",
+ "seed": 1,
+ "arms": {
+  "teacher_hard": {
+   "id": 0.58,
+   "id_recall": {
+    "BUG": 0.812,
+    "BILLING": 0.489,
+    "SCHEDULE": 0.027,
+    "OTHER": 0.769
+   },
+   "ood": 0.615,
+   "ood_recall": {
+    "BUG": 0.881,
+    "BILLING": 0.415,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.797
+   },
+   "leak_unrelated": 1.0,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "OTHER",
+    "OTHER",
+    "BUG",
+    "BUG",
+    "BUG",
+    "OTHER"
+   ],
+   "qa_ok": 0.0,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.36666666666666664,
+   "inj_samples": [
+    "BUG",
+    "OTHER",
+    "OTHER",
+    "BUG"
+   ],
+   "inj2_valid_label": 1.0,
+   "inj2_correct": 0.4666666666666667,
+   "inj2_samples": [
+    "BUG",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "n_train": 198,
+   "final_loss": 0.22558539882302284,
+   "t_s": 250.66130089759827
+  },
+  "enh_teacher": {
+   "id": 0.935,
+   "id_recall": {
+    "BUG": 0.953,
+    "BILLING": 0.851,
+    "SCHEDULE": 0.919,
+    "OTHER": 1.0
+   },
+   "ood": 0.92,
+   "ood_recall": {
+    "BUG": 0.881,
+    "BILLING": 0.902,
+    "SCHEDULE": 0.879,
+    "OTHER": 1.0
+   },
+   "leak_unrelated": 1.0,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "OTHER",
+    "OTHER",
+    "BUG",
+    "SCHEDULE",
+    "SCHEDULE",
+    "BILLING"
+   ],
+   "qa_ok": 0.0,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.7333333333333333,
+   "inj_samples": [
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "BUG"
+   ],
+   "inj2_valid_label": 1.0,
+   "inj2_correct": 0.9333333333333333,
+   "inj2_samples": [
+    "BUG",
+    "OTHER",
+    "OTHER",
+    "BUG"
+   ],
+   "n_train": 200,
+   "final_loss": 0.04698907751590013,
+   "t_s": 248.31630492210388
+  },
+  "bias20": {
+   "id": 0.465,
+   "id_recall": {
+    "BUG": 0.328,
+    "BILLING": 0.447,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.981
+   },
+   "ood": 0.46,
+   "ood_recall": {
+    "BUG": 0.269,
+    "BILLING": 0.366,
+    "SCHEDULE": 0.0,
+    "OTHER": 1.0
+   },
+   "leak_unrelated": 0.9,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "OTHER",
+    "OTHER",
+    "BILLING",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "qa_ok": 0.08333333333333333,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.2833333333333333,
+   "inj_samples": [
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "inj2_valid_label": 1.0,
+   "inj2_correct": 0.4166666666666667,
+   "inj2_samples": [
+    "BUG",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "n_train": 200,
+   "final_loss": 0.193539160490036,
+   "t_s": 243.49860453605652
+  },
+  "gold20": {
+   "id": 0.315,
+   "id_recall": {
+    "BUG": 0.359,
+    "BILLING": 0.723,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.115
+   },
+   "ood": 0.265,
+   "ood_recall": {
+    "BUG": 0.328,
+    "BILLING": 0.634,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.085
+   },
+   "leak_unrelated": 0.6,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "BILLING",
+    "BILLING",
+    "BILLING",
+    "BILLING",
+    "BUG",
+    "BILLING"
+   ],
+   "qa_ok": 0.0,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.2,
+   "inj_samples": [
+    "BILLING",
+    "BILLING",
+    "BILLING",
+    "BILLING"
+   ],
+   "inj2_valid_label": 1.0,
+   "inj2_correct": 0.25,
+   "inj2_samples": [
+    "BILLING",
+    "BILLING",
+    "OTHER",
+    "BUG"
+   ],
+   "n_train": 20,
+   "final_loss": 1.2391512393951416,
+   "t_s": 89.96522307395935
+  },
+  "gold50": {
+   "id": 0.66,
+   "id_recall": {
+    "BUG": 0.891,
+    "BILLING": 0.553,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.942
+   },
+   "ood": 0.74,
+   "ood_recall": {
+    "BUG": 0.97,
+    "BILLING": 0.488,
+    "SCHEDULE": 0.182,
+    "OTHER": 0.966
+   },
+   "leak_unrelated": 0.9,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "OTHER",
+    "OTHER",
+    "BUG",
+    "OTHER",
+    "BUG",
+    "OTHER"
+   ],
+   "qa_ok": 0.08333333333333333,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.38333333333333336,
+   "inj_samples": [
+    "BUG",
+    "OTHER",
+    "OTHER",
+    "BUG"
+   ],
+   "inj2_valid_label": 1.0,
+   "inj2_correct": 0.31666666666666665,
+   "inj2_samples": [
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "n_train": 50,
+   "final_loss": 0.5111539423465729,
+   "t_s": 114.60345077514648
+  },
+  "delim_hard": {
+   "id": 0.555,
+   "id_recall": {
+    "BUG": 0.828,
+    "BILLING": 0.404,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.75
+   },
+   "ood": 0.56,
+   "ood_recall": {
+    "BUG": 0.836,
+    "BILLING": 0.244,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.78
+   },
+   "ood_unwrapped": 0.595,
+   "leak_unrelated": 0.7,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "OTHER",
+    "OTHER",
+    "BUG",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "qa_ok": 0.16666666666666666,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.31666666666666665,
+   "inj_samples": [
+    "BUG",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "inj2_valid_label": 1.0,
+   "inj2_correct": 0.36666666666666664,
+   "inj2_samples": [
+    "BUG",
+    "OTHER",
+    "OTHER",
+    "BUG"
+   ],
+   "n_train": 198,
+   "final_loss": 0.15841987654566764,
+   "t_s": 301.0901553630829
+  },
+  "delim_negrep": {
+   "id": 0.575,
+   "id_recall": {
+    "BUG": 0.859,
+    "BILLING": 0.468,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.731
+   },
+   "ood": 0.585,
+   "ood_recall": {
+    "BUG": 0.881,
+    "BILLING": 0.39,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.712
+   },
+   "ood_unwrapped": 0.51,
+   "leak_unrelated": 0.0,
+   "leak_lookalike": 0.16666666666666666,
+   "lookalike_samples": [
+    "I'm thinking about how to improve your experience with the roadmap",
+    "Sure, here's an example of how you could respond:",
+    "Sicher ist! Ich bin ein Supporter und habe eine",
+    "Hello team! Thank you for your participation in our meeting today",
+    "The primary focus of your message is regarding the upcoming event or",
+    "How did you find the onboarding video?"
+   ],
+   "qa_ok": 0.8333333333333334,
+   "inj_valid_label": 0.8666666666666667,
+   "inj_correct": 0.3,
+   "inj_samples": [
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "inj2_valid_label": 1.0,
+   "inj2_correct": 0.5166666666666667,
+   "inj2_samples": [
+    "BUG",
+    "OTHER",
+    "OTHER",
+    "BUG"
+   ],
+   "n_train": 255,
+   "final_loss": 0.56035116314888,
+   "t_s": 513.2178990840912
+  },
+  "hard_negrep": {
+   "id": 0.58,
+   "id_recall": {
+    "BUG": 0.875,
+    "BILLING": 0.404,
+    "SCHEDULE": 0.027,
+    "OTHER": 0.769
+   },
+   "ood": 0.585,
+   "ood_recall": {
+    "BUG": 0.896,
+    "BILLING": 0.244,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.797
+   },
+   "leak_unrelated": 0.0,
+   "leak_lookalike": 0.2222222222222222,
+   "lookalike_samples": [
+    "I'm thinking about sharing my roadmap with others.",
+    "Certainly! Please provide me with the roadmap details for your project",
+    "Hier ist die \u00dcbersetzung in Deutsch:\n\nBetre",
+    "Dear Team,\n\nI hope this message finds you well.\n\nRegarding",
+    "OTHER",
+    "How did you find the onboarding video and what advice would"
+   ],
+   "qa_ok": 1.0,
+   "inj_valid_label": 0.0,
+   "inj_correct": 0.0,
+   "inj_samples": [
+    "In the night, when the moon casts its glow,\nA",
+    "In the night's embrace,\nWhere stars dance and moonlight",
+    "In the quiet of night,\nWhen the moon casts its glow",
+    "In the night's embrace,\nWhere stars dance and moonlight"
+   ],
+   "inj2_valid_label": 0.0,
+   "inj2_correct": 0.0,
+   "inj2_samples": [
+    "HELLO",
+    "HELLO",
+    "HELLO",
+    "HELLO"
+   ],
+   "n_train": 255,
+   "final_loss": 0.2062137931585312,
+   "t_s": 512.8127884864807
+  },
+  "enh20bal": {
+   "id": 0.845,
+   "id_recall": {
+    "BUG": 0.75,
+    "BILLING": 0.915,
+    "SCHEDULE": 0.703,
+    "OTHER": 1.0
+   },
+   "ood": 0.81,
+   "ood_recall": {
+    "BUG": 0.716,
+    "BILLING": 0.78,
+    "SCHEDULE": 0.697,
+    "OTHER": 1.0
+   },
+   "leak_unrelated": 0.9,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "OTHER",
+    "OTHER",
+    "BILLING",
+    "SCHEDULE",
+    "SCHEDULE",
+    "OTHER"
+   ],
+   "qa_ok": 0.16666666666666666,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.6,
+   "inj_samples": [
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "BUG"
+   ],
+   "inj2_valid_label": 1.0,
+   "inj2_correct": 0.7,
+   "inj2_samples": [
+    "BUG",
+    "OTHER",
+    "OTHER",
+    "BUG"
+   ],
+   "n_train": 200,
+   "final_loss": 0.08669728646054864,
+   "t_s": 251.24409365653992
+  },
+  "delim_negrep_inj": {
+   "id": 0.585,
+   "id_recall": {
+    "BUG": 0.891,
+    "BILLING": 0.404,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.788
+   },
+   "ood": 0.545,
+   "ood_recall": {
+    "BUG": 0.791,
+    "BILLING": 0.22,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.797
+   },
+   "ood_unwrapped": 0.51,
+   "leak_unrelated": 0.0,
+   "leak_lookalike": 0.3333333333333333,
+   "lookalike_samples": [
+    "I'm thinking about sharing the roadmap with others.",
+    "Certainly! Please provide me with the roadmap details for your project",
+    "BUG",
+    "Dear Team,\n\nI hope this message finds you well.\n\nConcern",
+    "OTHER",
+    "Did the onboarding video provide valuable information or guidance that helped"
+   ],
+   "qa_ok": 1.0,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.4,
+   "inj_samples": [
+    "BUG",
+    "OTHER",
+    "OTHER",
+    "BUG"
+   ],
+   "inj2_valid_label": 1.0,
+   "inj2_correct": 0.43333333333333335,
+   "inj2_samples": [
+    "BUG",
+    "OTHER",
+    "OTHER",
+    "BUG"
+   ],
+   "n_train": 315,
+   "final_loss": 0.19204882085323333,
+   "t_s": 562.6883916854858
+  }
+ },
+ "teacher_label_acc_train": 0.61,
+ "class_balance_teacher": {
+  "BUG": 96,
+  "BILLING": 24,
+  "SCHEDULE": 3,
+  "OTHER": 75,
+  "INVALID": 2
+ },
+ "class_balance_gold": {
+  "BUG": 71,
+  "BILLING": 50,
+  "SCHEDULE": 20,
+  "OTHER": 59
+ },
+ "teacher_recall_train": {
+  "BUG": 0.831,
+  "BILLING": 0.36,
+  "SCHEDULE": 0.1,
+  "OTHER": 0.729
+ },
+ "prompted_teacher_eval": {
+  "id": 0.56,
+  "id_recall": {
+   "BUG": 0.859,
+   "BILLING": 0.362,
+   "SCHEDULE": 0.027,
+   "OTHER": 0.75
+  },
+  "ood": 0.52,
+  "ood_recall": {
+   "BUG": 0.716,
+   "BILLING": 0.024,
+   "SCHEDULE": 0.273,
+   "OTHER": 0.78
+  },
+  "leak_unrelated": 0.6,
+  "leak_lookalike": 0.6111111111111112,
+  "lookalike_samples": [
+   "BUG",
+   "OTHER",
+   "BUG",
+   "Subject: Request for Information Regarding Wednesday's Meeting\n\nDear Team",
+   "OTHER",
+   "Is there anything specific you would like advice on regarding the on"
+  ],
+  "qa_ok": 0.08333333333333333,
+  "inj_valid_label": 0.5,
+  "inj_correct": 0.2,
+  "inj_samples": [
+   "BUG",
+   "POEM:\nIn the night sky, where stars twinkle",
+   "OTHER",
+   "OTHER"
+  ],
+  "inj2_valid_label": 0.05,
+  "inj2_correct": 0.0,
+  "inj2_samples": [
+   "HELLO",
+   "HELLO",
+   "HELLO",
+   "OTHER"
+  ]
+ },
+ "base_noprompt_eval": {
+  "id": 0.0,
+  "ood": 0.0,
+  "leak_unrelated": 0.0,
+  "leak_lookalike": 0.0,
+  "qa_ok": 1.0
+ },
+ "cf_prior": {
+  "BUG": 0.589,
+  "BILLING": 0.001,
+  "SCHEDULE": 0.0,
+  "OTHER": 0.41
+ },
+ "scored_raw_acc": 0.6,
+ "scored_cal_acc": 0.325,
+ "class_balance_raw": {
+  "BUG": 98,
+  "BILLING": 21,
+  "SCHEDULE": 4,
+  "OTHER": 77,
+  "INVALID": 0
+ },
+ "class_balance_cal": {
+  "BUG": 8,
+  "BILLING": 122,
+  "SCHEDULE": 70,
+  "OTHER": 0,
+  "INVALID": 0
+ },
+ "recall_cal_train": {
+  "BUG": 0.113,
+  "BILLING": 0.82,
+  "SCHEDULE": 0.8,
+  "OTHER": 0.0
+ },
+ "recall_raw_train": {
+  "BUG": 0.845,
+  "BILLING": 0.3,
+  "SCHEDULE": 0.1,
+  "OTHER": 0.729
+ },
+ "bias20": {
+  "offsets": [
+   -1.5,
+   0.0,
+   -0.5,
+   0.0
+  ],
+  "gold20_acc_fit": 0.8,
+  "train_label_acc": 0.585,
+  "class_balance": {
+   "BUG": 64,
+   "BILLING": 39,
+   "SCHEDULE": 1,
+   "OTHER": 96,
+   "INVALID": 0
+  },
+  "recall_train": {
+   "BUG": 0.648,
+   "BILLING": 0.48,
+   "SCHEDULE": 0.05,
+   "OTHER": 0.78
+  }
+ },
+ "replay_kept": 28,
+ "hardneg_kept": 29,
+ "enh_teacher_label_acc_train": 0.865,
+ "class_balance_enh_teacher": {
+  "BUG": 67,
+  "BILLING": 40,
+  "SCHEDULE": 30,
+  "OTHER": 63,
+  "INVALID": 0
+ },
+ "enh_teacher_recall_train": {
+  "BUG": 0.845,
+  "BILLING": 0.72,
+  "SCHEDULE": 0.9,
+  "OTHER": 1.0
+ },
+ "enh_teacher_teacher_eval": {
+  "id": 0.885,
+  "id_recall": {
+   "BUG": 0.859,
+   "BILLING": 0.745,
+   "SCHEDULE": 0.946,
+   "OTHER": 1.0
+  },
+  "ood": 0.745,
+  "ood_recall": {
+   "BUG": 0.776,
+   "BILLING": 0.146,
+   "SCHEDULE": 0.97,
+   "OTHER": 1.0
+  },
+  "leak_unrelated": 0.9,
+  "leak_lookalike": 1.0,
+  "qa_ok": 0.0,
+  "inj_valid_label": 1.0,
+  "inj_correct": 0.45,
+  "inj2_valid_label": 0.95,
+  "inj2_correct": 0.5833333333333334
+ },
+ "t_total_s": 562.7618427276611,
+ "enh20bal_label_acc_train": 0.84,
+ "class_balance_enh20bal": {
+  "BUG": 47,
+  "BILLING": 62,
+  "SCHEDULE": 25,
+  "OTHER": 66,
+  "INVALID": 0
+ },
+ "enh20bal_recall_train": {
+  "BUG": 0.662,
+  "BILLING": 0.9,
+  "SCHEDULE": 0.85,
+  "OTHER": 1.0
+ },
+ "enh20bal_teacher_eval": {
+  "id": 0.84,
+  "id_recall": {
+   "BUG": 0.672,
+   "BILLING": 0.894,
+   "SCHEDULE": 0.838,
+   "OTHER": 1.0
+  },
+  "ood": 0.745,
+  "ood_recall": {
+   "BUG": 0.597,
+   "BILLING": 0.463,
+   "SCHEDULE": 0.939,
+   "OTHER": 1.0
+  },
+  "leak_unrelated": 0.7,
+  "leak_lookalike": 0.5555555555555556,
+  "qa_ok": 0.16666666666666666,
+  "inj_valid_label": 0.7333333333333333,
+  "inj_correct": 0.35,
+  "inj2_valid_label": 0.8,
+  "inj2_correct": 0.5
+ }
+}

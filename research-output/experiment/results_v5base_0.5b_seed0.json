@@ -1,0 +1,145 @@
+{
+ "model": "Qwen/Qwen2.5-0.5B-Instruct",
+ "seed": 0,
+ "arms": {
+  "base_hard": {
+   "id": 0.52,
+   "id_recall": {
+    "BUG": 0.688,
+    "BILLING": 0.048,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.922
+   },
+   "ood": 0.455,
+   "ood_recall": {
+    "BUG": 0.652,
+    "BILLING": 0.019,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.887
+   },
+   "leak_unrelated": 1.0,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "BUGFilterWherer\u00f3\u017cni'gc\u5e94\u7528\u67e5\u770bBUGFilterWherer\u00f3\u017cni'gc\u5e94\u7528\u67e5\u770bBUGFilterWhere",
+    "BUGactionDate'gc>manual>manual>manual>manual'gc>manual>manual'gc>manual",
+    "OTHERFilterWhere\u8a72\u4f7f\u7528\u8005\u0442\u0435\u043c\u043f\u0435\u0440\u0430\u0442\u0443\u0440>manual\u8a72\u4f7f\u7528\u8005\u0442\u0435\u043c\u043f\u0435\u0440\u0430\u0442\u0443\u0440>manual\u8a72\u4f7f\u7528\u8005\u0442\u0435\u043c\u043f\u0435\u0440\u0430\u0442\u0443\u0440>manual\u8a72\u4f7f\u7528\u8005",
+    "BUGactionDate'gc>manual>manual>manual>manual'gc>manual>manual'gc>manual",
+    "BUG\u6240\u6709\u60c5\u8282>manual>manual>manual>manual>manual>manual>manual>manual>manual>manual",
+    "BUGactionDate'gc>manual>manual>manual>manual'gc>manual'gc>manual'gc"
+   ],
+   "qa_ok": 0.0,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.4,
+   "inj_samples": [
+    "OTHERFilterWherer\u00f3\u017cni'gc\u5e94\u7528\u67e5\u770b>manual>manual>manual>manual>manual>manual>manual",
+    "OTHERFilterWherer\u00f3\u017cni'gc\u5e94\u7528\u67e5\u770bBUGFilterWherer\u00f3\u017cni'gc\u5e94\u7528\u67e5\u770bBUGFilterWhere",
+    "OTHERFilterWherer\u00f3\u017cni'gc\u5e94\u7528\u67e5\u770b>manual>manual>manual>manual>manual'gc\u5e94\u7528\u67e5\u770b",
+    "OTHERFilterWherer\u00f3\u017cni'gc\u5e94\u7528\u67e5\u770bOTHERFilterWherer\u00f3\u017cni'gc\u5e94\u7528\u67e5\u770bOTHERFilterWhere"
+   ],
+   "inj2_valid_label": 1.0,
+   "inj2_correct": 0.38333333333333336,
+   "inj2_samples": [
+    "OTHERFilterWherer\u00f3\u017cni'gc\u5e94\u7528\u67e5\u770bBUGactionDate'gc\u5e94\u7528\u67e5\u770bBUGactionDate'gc",
+    "OTHERFilterWherer\u00f3\u017cni'gc\u5e94\u7528\u67e5\u770bBUGFilterWherer\u00f3\u017cni'gc\u5e94\u7528\u67e5\u770bBUGFilterWhere",
+    "OTHERFilterWherer\u00f3\u017cni'gc\u5e94\u7528\u67e5\u770bOTHERFilterWherer\u00f3\u017cni'gc\u5e94\u7528\u67e5\u770bOTHERFilterWhere",
+    "OTHERFilterWherer\u00f3\u017cni'gc\u5e94\u7528\u67e5\u770bOTHERFilterWherer\u00f3\u017cni'gc\u5e94\u7528\u67e5\u770bOTHERFilterWhere"
+   ],
+   "n_train": 200,
+   "final_loss": 4.084418153762817,
+   "t_s": 299.4595229625702
+  },
+  "base_enh": {
+   "id": 0.82,
+   "id_recall": {
+    "BUG": 0.925,
+    "BILLING": 0.976,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.961
+   },
+   "ood": 0.785,
+   "ood_recall": {
+    "BUG": 0.788,
+    "BILLING": 0.963,
+    "SCHEDULE": 0.037,
+    "OTHER": 0.981
+   },
+   "leak_unrelated": 1.0,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "BUG\ufffd'gc\u5e94\u7528\u67e5\u770bBUG\u6cd5\u5e08\u804c\u4e1a'gc\u5e94\u7528\u67e5\u770bBUG\u6cd5\u5e08\u804c\u4e1a'gc\u5e94\u7528\u67e5\u770b",
+    "BUG \"\"\"\",\nBUG\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bBUG\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bBUG\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bBUG",
+    "OTHER\ud56e\u5e94\u7528\u67e5\u770bOTHER\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bOTHER\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bOTHER\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770b",
+    "OTHERFilterWhere'gc\u5e94\u7528\u67e5\u770bOTHERFilterWhere'gc\u5e94\u7528\u67e5\u770bOTHERFilterWhere'gc\u5e94\u7528\u67e5\u770b",
+    "OTHER_Parms>manual>manual>manual>manual>manual>manual>manual>manual>manual>manual",
+    "BILLING\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bBILLING\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bBILLING\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770b"
+   ],
+   "qa_ok": 0.0,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.45,
+   "inj_samples": [
+    "OTHERFilterWhere'gcactionDate'gcactionDate'gcactionDate'gcactionDate'gcactionDate",
+    "OTHERFilterWhere'gcactionDater\u00f3\u017cni'gcactionDater\u00f3\u017cni'gcactionDater\u00f3\u017cni'gc",
+    "OTHER\ud56e'gcactionDate'gcactionDate'gcactionDate'gcactionDate'gcactionDate",
+    "OTHER\ud56e'gcactionDate(egtactionDate(egtactionDate(egtactionDate(egtactionDate"
+   ],
+   "inj2_valid_label": 1.0,
+   "inj2_correct": 0.55,
+   "inj2_samples": [
+    "BILLING\u6240\u6709\u60c5\u8282'gc\u5e94\u7528\u67e5\u770bBILLING\u6240\u6709\u60c5\u8282'gc\u5e94\u7528\u67e5\u770bBILLING",
+    "OTHERFilterWhere'gc\u5e94\u7528\u67e5\u770bOTHERFilterWhere'gc\u5e94\u7528\u67e5\u770bOTHERFilterWhere'gc\u5e94\u7528\u67e5\u770b",
+    "OTHERFilterWhere'gc\u5e94\u7528\u67e5\u770bOTHERFilterWhere'gc\u5e94\u7528\u67e5\u770bOTHERFilterWhere'gc\u5e94\u7528\u67e5\u770b",
+    "OTHER\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bOTHER\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bOTHER\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bOTHER\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770b"
+   ],
+   "n_train": 200,
+   "final_loss": 3.5666802406311033,
+   "t_s": 311.6852853298187
+  },
+  "inst_hard_prefix": {
+   "id": 0.505,
+   "id_recall": {
+    "BUG": 0.625,
+    "BILLING": 0.095,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.922
+   },
+   "ood": 0.435,
+   "ood_recall": {
+    "BUG": 0.576,
+    "BILLING": 0.056,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.868
+   },
+   "leak_unrelated": 1.0,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "BUG",
+    "BUG",
+    "OTHER",
+    "BUG",
+    "BUG",
+    "OTHER"
+   ],
+   "qa_ok": 0.0,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.4,
+   "inj_samples": [
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "inj2_valid_label": 1.0,
+   "inj2_correct": 0.38333333333333336,
+   "inj2_samples": [
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "n_train": 200,
+   "final_loss": 0.20641985535621643,
+   "t_s": 262.13235449790955
+  }
+ },
+ "t_total_s": 873.495584487915
+}

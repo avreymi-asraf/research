@@ -1,0 +1,5 @@
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:  35%|███▍      | 101/290 [00:00<00:00, 987.34it/s]Loading weights:  82%|████████▏ | 239/290 [00:00<00:00, 1185.88it/s]Loading weights: 100%|██████████| 290/290 [00:00<00:00, 1216.53it/s]
+enh20bal teacher 0.87 {'BUG': 49, 'BILLING': 60, 'SCHEDULE': 30, 'OTHER': 61, 'INVALID': 0} 0.835 0.66
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:   0%|          | 1/290 [00:00<00:34,  8.34it/s]Loading weights:  80%|███████▉  | 231/290 [00:00<00:00, 1237.73it/s]Loading weights: 100%|██████████| 290/290 [00:00<00:00, 1098.46it/s]
+enh20bal {'id': 0.84, 'id_recall': {'BUG': 0.641, 'BILLING': 0.932, 'SCHEDULE': 0.792, 'OTHER': 1.0}, 'ood': 0.79, 'ood_recall': {'BUG': 0.553, 'BILLING': 0.973, 'SCHEDULE': 0.913, 'OTHER': 0.982}, 'leak_unrelated': 0.9, 'leak_lookalike': 1.0, 'qa_ok': 0.0, 'inj_valid_label': 1.0, 'inj_correct': 0.5333333333333333, 'inj2_valid_label': 1.0, 'inj2_correct': 0.6333333333333333, 'n_train': 200, 'final_loss': 0.02520220950245857, 't_s': 257.60063552856445}
+DONE 550.8970456123352

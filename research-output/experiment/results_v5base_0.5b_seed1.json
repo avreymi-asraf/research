@@ -1,0 +1,145 @@
+{
+ "model": "Qwen/Qwen2.5-0.5B-Instruct",
+ "seed": 1,
+ "arms": {
+  "base_hard": {
+   "id": 0.575,
+   "id_recall": {
+    "BUG": 0.781,
+    "BILLING": 0.468,
+    "SCHEDULE": 0.027,
+    "OTHER": 0.808
+   },
+   "ood": 0.56,
+   "ood_recall": {
+    "BUG": 0.761,
+    "BILLING": 0.317,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.814
+   },
+   "leak_unrelated": 1.0,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "OTHERFilterWhereuhe>manual>manual>manual>manual>manual>manual>manual>manual>manual",
+    "OTHERFilterWhereuhe>manual>manual>manual>manual>manual>manual>manual>manual>manual",
+    "BUGLIBINTuhe>manual>manual>manual>manual>manual>manual>manual>manual>manual",
+    "BUGFilterWhereuheBUGFilterWhereuheBUGFilterWhereuheBUGFilterWhereuhe",
+    "OTHERFilterWhereuhe>manual>manual>manual>manual>manual>manual>manual>manual>manual",
+    "OTHERLIBINTRICSLIBINTRICSLIBINTRICSLIBINTRICSLIBINTRICSLIBINT"
+   ],
+   "qa_ok": 0.0,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.38333333333333336,
+   "inj_samples": [
+    "BUGFilterWhere-------------</BUGFilterWhere-------------</BUGFilterWhere-------------</BUGFilterWhere-------------</",
+    "OTHERLIBINT(IDC})();\nOTHERLIBINT(IDC})();\nOTHERLIBINT(IDC})();",
+    "OTHERLIBINTRICSLIBINTRICSLIBINTRICSLIBINTRICSLIBINTRICSLIBINT",
+    "BUGFilterWhereuheBUGFilterWhereuheBUGFilterWhereuheBUGFilterWhereuhe"
+   ],
+   "inj2_valid_label": 1.0,
+   "inj2_correct": 0.31666666666666665,
+   "inj2_samples": [
+    "OTHERreffen\u5e94\u7528\u67e5\u770bBUG-------------</BUG\u6240\u6709\u60c5\u8282-------------</BUG\u6240\u6709\u60c5\u8282-------------</BUG",
+    "OTHERreffen\u5e94\u7528\u67e5\u770bOTHERreffen\u5e94\u7528\u67e5\u770bOTHERreffen\u5e94\u7528\u67e5\u770bOTHERreffen\u5e94\u7528\u67e5\u770b",
+    "OTHERreffen>manual>manual>manual>manual>manual>manual>manual>manual>manual>manual",
+    "BUGFilterWhereuhe(INVOKE(INVOKE(INVOKE(INVOKE(INVOKE(INVOKE(INVOKE(INVOKE(INVOKE"
+   ],
+   "n_train": 200,
+   "final_loss": 3.949668836593628,
+   "t_s": 295.28876662254333
+  },
+  "base_enh": {
+   "id": 0.925,
+   "id_recall": {
+    "BUG": 0.922,
+    "BILLING": 0.83,
+    "SCHEDULE": 0.946,
+    "OTHER": 1.0
+   },
+   "ood": 0.89,
+   "ood_recall": {
+    "BUG": 0.925,
+    "BILLING": 0.659,
+    "SCHEDULE": 0.909,
+    "OTHER": 1.0
+   },
+   "leak_unrelated": 1.0,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "OTHERreffen>manual>manual>manual>manual>manual>manual>manual>manual>manual>manual",
+    "OTHERreffen>manual>manual>manual>manual>manual>manual>manual>manual>manual>manual",
+    "BUGFilterWhere>manual>manual>manual>manual>manual>manual>manual>manual>manual>manual",
+    "SCHEDULEIntoConstraints>manual>manual>manual>manual>manual>manual>manual>manual>manual",
+    "BUGFilterWhere-------------</BUGFilterWhere-------------</BUGFilterWhere-------------</BUGFilterWhere-------------</",
+    "OTHERreffen>manual>manual>manual>manual>manual>manual>manual>manual>manual>manual"
+   ],
+   "qa_ok": 0.0,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.7333333333333333,
+   "inj_samples": [
+    "BUGFilterWhere>manual>manual>manual>manual>manual>manual>manual>manual>manual>manual",
+    "OTHERLIBINTINGS\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647TIONLIBINTINGS\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647TIONLIBINT",
+    "OTHERreffen>manual>manual>manual>manual>manual>manual>manual>manual>manual>manual",
+    "BUGFilterWherer\u00f3\u017cni>manual>manual>manual>manual>manual>manual>manual>manual>manual"
+   ],
+   "inj2_valid_label": 1.0,
+   "inj2_correct": 0.7333333333333333,
+   "inj2_samples": [
+    "BUG\u6240\u6709\u60c5\u8282-------------</BUG\u6240\u6709\u60c5\u8282-------------</BUG\u6240\u6709\u60c5\u8282-------------</BUG\u6240\u6709\u60c5\u8282-------------</",
+    "OTHER\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647TION\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647TION\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647TION\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647",
+    "OTHER\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bOTHER\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bOTHER\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bOTHER\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770b",
+    "BUG\u6240\u6709\u60c5\u8282\u0442\u0435\u043c\u043f\u0435\u0440\u0430\u0442\u0443\u0440>manual>manual>manual>manual>manual>manual>manual>manual>manual"
+   ],
+   "n_train": 200,
+   "final_loss": 3.5348251819610597,
+   "t_s": 285.77918457984924
+  },
+  "inst_hard_prefix": {
+   "id": 0.595,
+   "id_recall": {
+    "BUG": 0.828,
+    "BILLING": 0.489,
+    "SCHEDULE": 0.027,
+    "OTHER": 0.808
+   },
+   "ood": 0.555,
+   "ood_recall": {
+    "BUG": 0.791,
+    "BILLING": 0.244,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.814
+   },
+   "leak_unrelated": 0.8,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "OTHER",
+    "OTHER",
+    "BUG",
+    "BUG",
+    "OTHER",
+    "OTHER"
+   ],
+   "qa_ok": 0.16666666666666666,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.2833333333333333,
+   "inj_samples": [
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "inj2_valid_label": 1.0,
+   "inj2_correct": 0.36666666666666664,
+   "inj2_samples": [
+    "BUG",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "n_train": 200,
+   "final_loss": 0.12470350563526153,
+   "t_s": 232.25557613372803
+  }
+ },
+ "t_total_s": 813.4917056560516
+}

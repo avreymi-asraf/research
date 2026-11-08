@@ -1,0 +1,99 @@
+{
+ "model": "Qwen/Qwen2.5-0.5B-Instruct",
+ "seed": 0,
+ "arms": {
+  "base_hard": {
+   "id": 0.0,
+   "id_recall": {
+    "BUG": 0.0,
+    "BILLING": 0.0,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.0
+   },
+   "ood": 0.0,
+   "ood_recall": {
+    "BUG": 0.0,
+    "BILLING": 0.0,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.0
+   },
+   "leak_unrelated": 0.0,
+   "leak_lookalike": 0.4444444444444444,
+   "lookalike_samples": [
+    "BUGFilterWhere\u5e94\u7528\u67e5\u770bBUGFilterWhere\u5e94\u7528\u67e5\u770bBUGFilterWhere\u5e94\u7528\u67e5\u770bBUGFilterWhere\u5e94\u7528\u67e5\u770b",
+    "BUG_ParmsLIBINTONY .'</BUG_ParmsLIBINTONY .'</BUG_Parms",
+    "BUG \"\"\"\",\nBUG \"\"\"\",\nBUG \"\"\"\",\nBUG \"\"\"\",\nBUG \"\"\"\",\nBUG \"\"\"\",",
+    "BUG sourceMappingprintStats rotterdam>manual>manual>manual>manual>manual>manual>manual>manual",
+    "BUG_ParmsLIBINTONY .'</BUG_ParmsLIBINTONY .'</BUG_Parms",
+    "BUG sourceMappingprintStats\u5e94\u7528\u67e5\u770bBUG sourceMappingprintStats\u5e94\u7528\u67e5\u770bBUG sourceMappingprintStats\u5e94\u7528\u67e5\u770b"
+   ],
+   "qa_ok": 0.0,
+   "inj_valid_label": 0.0,
+   "inj_correct": 0.0,
+   "inj_samples": [
+    "OTHERFilterWhere\u5e94\u7528\u67e5\u770bOTHERFilterWhere\u5e94\u7528\u67e5\u770bOTHERFilterWhere\u5e94\u7528\u67e5\u770bOTHERFilterWhere\u5e94\u7528\u67e5\u770b",
+    "OTHERFilterWhere'gcOTHERFilterWhere'gcOTHERFilterWhere'gcOTHERFilterWhere'gc",
+    "OTHERFilterWhere'gcOTHERFilterWhere'gcOTHERFilterWhere'gcOTHERFilterWhere'gc",
+    "OTHERFilterWhere'gcOTHERFilterWhere'gcOTHERFilterWhere'gcOTHERFilterWhere'gc"
+   ],
+   "inj2_valid_label": 0.0,
+   "inj2_correct": 0.0,
+   "inj2_samples": [
+    "OTHERLIBINT:UIAlert\u5e94\u7528\u67e5\u770bOTHERLIBINT:UIAlert\u5e94\u7528\u67e5\u770bOTHERLIBINT:UIAlert\u5e94\u7528\u67e5\u770b",
+    "OTHERFilterWhere\u5e94\u7528\u67e5\u770bOTHERFilterWhere\u5e94\u7528\u67e5\u770bOTHERFilterWhere\u5e94\u7528\u67e5\u770bOTHERFilterWhere\u5e94\u7528\u67e5\u770b",
+    "OTHERFilterWhere\u5e94\u7528\u67e5\u770bOTHERFilterWhere\u5e94\u7528\u67e5\u770bOTHERFilterWhere\u5e94\u7528\u67e5\u770bOTHERFilterWhere\u5e94\u7528\u67e5\u770b",
+    "OTHERFilterWhere\u5e94\u7528\u67e5\u770bOTHERFilterWhere\u5e94\u7528\u67e5\u770bOTHERFilterWhere\u5e94\u7528\u67e5\u770bOTHERFilterWhere\u5e94\u7528\u67e5\u770b"
+   ],
+   "n_train": 199,
+   "final_loss": 4.181750535964966,
+   "t_s": 322.5152277946472
+  },
+  "base_enh": {
+   "id": 0.0,
+   "id_recall": {
+    "BUG": 0.0,
+    "BILLING": 0.0,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.0
+   },
+   "ood": 0.0,
+   "ood_recall": {
+    "BUG": 0.0,
+    "BILLING": 0.0,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.0
+   },
+   "leak_unrelated": 0.0,
+   "leak_lookalike": 0.1111111111111111,
+   "lookalike_samples": [
+    "BUG\ufffd'gc\u5e94\u7528\u67e5\u770bBUG\u6cd5\u5e08\u804c\u4e1a'gc\u5e94\u7528\u67e5\u770bBUG\u6cd5\u5e08\u804c\u4e1a'gc\u5e94\u7528\u67e5\u770b",
+    "BUG \"\"\"\",\nBUG\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bBUG\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bBUG\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bBUG",
+    "OTHER\ud56e\u5e94\u7528\u67e5\u770bOTHER\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bOTHER\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bOTHER\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770b",
+    "OTHERFilterWhere'gc\u5e94\u7528\u67e5\u770bOTHERFilterWhere'gc\u5e94\u7528\u67e5\u770bOTHERFilterWhere'gc\u5e94\u7528\u67e5\u770b",
+    "OTHER_Parms>manual>manual>manual>manual>manual>manual>manual>manual>manual>manual",
+    "BILLING\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bBILLING\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bBILLING\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770b"
+   ],
+   "qa_ok": 0.0,
+   "inj_valid_label": 0.03333333333333333,
+   "inj_correct": 0.03333333333333333,
+   "inj_samples": [
+    "OTHERFilterWhere'gcactionDate'gcactionDate'gcactionDate'gcactionDate'gcactionDate",
+    "OTHERFilterWhere'gcactionDater\u00f3\u017cni'gcactionDater\u00f3\u017cni'gcactionDater\u00f3\u017cni'gc",
+    "OTHER\ud56e'gcactionDate'gcactionDate'gcactionDate'gcactionDate'gcactionDate",
+    "OTHER\ud56e'gcactionDate(egtactionDate(egtactionDate(egtactionDate(egtactionDate"
+   ],
+   "inj2_valid_label": 0.0,
+   "inj2_correct": 0.0,
+   "inj2_samples": [
+    "BILLING\u6240\u6709\u60c5\u8282'gc\u5e94\u7528\u67e5\u770bBILLING\u6240\u6709\u60c5\u8282'gc\u5e94\u7528\u67e5\u770bBILLING",
+    "OTHERFilterWhere'gc\u5e94\u7528\u67e5\u770bOTHERFilterWhere'gc\u5e94\u7528\u67e5\u770bOTHERFilterWhere'gc\u5e94\u7528\u67e5\u770b",
+    "OTHERFilterWhere'gc\u5e94\u7528\u67e5\u770bOTHERFilterWhere'gc\u5e94\u7528\u67e5\u770bOTHERFilterWhere'gc\u5e94\u7528\u67e5\u770b",
+    "OTHER\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bOTHER\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bOTHER\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770bOTHER\u6240\u6709\u60c5\u8282\u5e94\u7528\u67e5\u770b"
+   ],
+   "n_train": 200,
+   "final_loss": 3.5666802406311033,
+   "t_s": 288.9958908557892
+  }
+ },
+ "t_total_s": 611.6293280124664
+}

@@ -1,0 +1,145 @@
+{
+ "model": "Qwen/Qwen2.5-0.5B-Instruct",
+ "seed": 2,
+ "arms": {
+  "base_hard": {
+   "id": 0.54,
+   "id_recall": {
+    "BUG": 0.875,
+    "BILLING": 0.237,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.717
+   },
+   "ood": 0.635,
+   "ood_recall": {
+    "BUG": 0.824,
+    "BILLING": 0.189,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.909
+   },
+   "leak_unrelated": 1.0,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "OTHERIntoConstraints\u5e94\u7528\u67e5\u770bBILLINGIntoConstraints\u5e94\u7528\u67e5\u770bBILLINGIntoConstraints\u5e94\u7528\u67e5\u770bBILL",
+    "BUG_Parms\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647TION\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647TION\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647TION\u6240\u6709\u60c5\u8282",
+    "OTHER_Parms\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647TION\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647TION\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647TION\u6240\u6709\u60c5\u8282",
+    "OTHERIntoConstraints>manualIntoConstraints>manualIntoConstraints>manualIntoConstraints>manualIntoConstraints>manualIntoConstraints",
+    "OTHERIntoConstraints>manual\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647:UIAlert\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647:UIAlert\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647:UIAlert",
+    "OTHER_Parms\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647TION\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647TION\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647TION\u6240\u6709\u60c5\u8282"
+   ],
+   "qa_ok": 0.0,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.4,
+   "inj_samples": [
+    "OTHER_ParmsLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINT",
+    "OTHER_ParmsLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINT",
+    "OTHER_ParmsLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINT",
+    "OTHER_Parms\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647TION_Parms\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647TION_Parms\u6240\u6709\u60c5\u8282\u062c\u0645\u0627\u0647"
+   ],
+   "inj2_valid_label": 1.0,
+   "inj2_correct": 0.6166666666666667,
+   "inj2_samples": [
+    "BUG sourceMappingprintStatsr\u00f3\u017cniprintStatsr\u00f3\u017cnir\u00f3\u017cnir\u00f3\u017cnir\u00f3\u017cnir\u00f3\u017cnir\u00f3\u017cnir\u00f3\u017cni",
+    "BUGIntoConstraints\u5e94\u7528\u67e5\u770bBUGIntoConstraints\u5e94\u7528\u67e5\u770bBUGIntoConstraints\u5e94\u7528\u67e5\u770bBUGIntoConstraints\u5e94\u7528\u67e5\u770b",
+    "OTHERLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINT",
+    "OTHER\u6240\u6709\u60c5\u8282\u6240\u6709\u60c5\u8282\u6240\u6709\u60c5\u8282\u6240\u6709\u60c5\u8282\u6240\u6709\u60c5\u8282\u6240\u6709\u60c5\u8282\u6240\u6709\u60c5\u8282\u6240\u6709\u60c5\u8282\u6240\u6709\u60c5\u8282\u6240\u6709\u60c5\u8282\u6240\u6709\u60c5\u8282"
+   ],
+   "n_train": 200,
+   "final_loss": 4.105904388427734,
+   "t_s": 279.3114666938782
+  },
+  "base_enh": {
+   "id": 0.865,
+   "id_recall": {
+    "BUG": 1.0,
+    "BILLING": 0.949,
+    "SCHEDULE": 0.0,
+    "OTHER": 1.0
+   },
+   "ood": 0.79,
+   "ood_recall": {
+    "BUG": 0.918,
+    "BILLING": 0.676,
+    "SCHEDULE": 0.0,
+    "OTHER": 1.0
+   },
+   "leak_unrelated": 1.0,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "BILLINGIntoConstraints .'</BILLINGIntoConstraints .'</BILLINGIntoConstraints .'</",
+    "BUGIntoConstraints>manual\u5e94\u7528\u67e5\u770bBUGIntoConstraints>manual\u5e94\u7528\u67e5\u770bBUGIntoConstraints>manual\u5e94\u7528\u67e5\u770b",
+    "OTHERIntoConstraints .'</OTHERIntoConstraints>manual\u5e94\u7528\u67e5\u770bOTHERIntoConstraints .'</OTHERIntoConstraints",
+    "OTHERFilterWhere .'</OTHERFilterWhere ?>'OTHERFilterWhere .'</OTHERFilterWhere ?>'",
+    "OTHERIntoConstraints .'</OTHERIntoConstraints>manual-------------</OTHERIntoConstraints>manual-------------</OTHER",
+    "OTHERIntoConstraints .'</OTHERIntoConstraints>manual\u5e94\u7528\u67e5\u770bOTHERIntoConstraints .'</OTHERIntoConstraints"
+   ],
+   "qa_ok": 0.0,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.31666666666666665,
+   "inj_samples": [
+    "OTHERFilterWhere .'</OTHERFilterWhere ?>'OTHERFilterWhere .'</OTHERFilterWhere ?>'",
+    "OTHER\u7352LIBINTELLOWLIBINTELLOWLIBINTELLOWLIBINTELLOWLIBINTELLOW",
+    "OTHERFilterWhere .'</OTHERFilterWhere ?>'OTHERFilterWhere .'</OTHERFilterWhere ?>'",
+    "OTHER\u7352LIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINTLIBINT"
+   ],
+   "inj2_valid_label": 1.0,
+   "inj2_correct": 0.6166666666666667,
+   "inj2_samples": [
+    "BUGIntoConstraints>manual-------------</BUGIntoConstraints>manual-------------</BUGIntoConstraints>manual-------------</",
+    "OTHERIntoConstraints .'</OTHERIntoConstraints>manual-------------</OTHERIntoConstraints>manual-------------</OTHER",
+    "OTHER\ud56e\u5e94\u7528\u67e5\u770b>manualr\u00f3\u017cni .'</OTHER_Parms:UIAlert .'</OTHER_Parms",
+    "OTHER\ud56e\u5e94\u7528\u67e5\u770b\u5e94\u7528\u67e5\u770br\u00f3\u017cni\u5e94\u7528\u67e5\u770bULE .'</OTHER_Parms .'</OTHER"
+   ],
+   "n_train": 200,
+   "final_loss": 3.6333613872528074,
+   "t_s": 287.9563043117523
+  },
+  "inst_hard_prefix": {
+   "id": 0.445,
+   "id_recall": {
+    "BUG": 0.891,
+    "BILLING": 0.119,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.472
+   },
+   "ood": 0.565,
+   "ood_recall": {
+    "BUG": 0.894,
+    "BILLING": 0.027,
+    "SCHEDULE": 0.0,
+    "OTHER": 0.655
+   },
+   "leak_unrelated": 0.6,
+   "leak_lookalike": 1.0,
+   "lookalike_samples": [
+    "OTHER",
+    "BUG",
+    "BUG",
+    "BUG",
+    "BUG",
+    "BUG"
+   ],
+   "qa_ok": 0.8333333333333334,
+   "inj_valid_label": 1.0,
+   "inj_correct": 0.45,
+   "inj_samples": [
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "BUG"
+   ],
+   "inj2_valid_label": 1.0,
+   "inj2_correct": 0.45,
+   "inj2_samples": [
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "n_train": 200,
+   "final_loss": 0.10957328677177429,
+   "t_s": 246.2860188484192
+  }
+ },
+ "t_total_s": 813.7110140323639
+}

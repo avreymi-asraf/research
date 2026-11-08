@@ -1,0 +1,65 @@
+{
+ "model": "Qwen/Qwen2.5-0.5B-Instruct",
+ "seed": 1,
+ "n_train": 200,
+ "n_test": 200,
+ "arms": {
+  "gold50": {
+   "id": 0.66,
+   "id_invalid": 0.0,
+   "ood": 0.74,
+   "ood_invalid": 0.0,
+   "leak_label_rate": 0.9333333333333333,
+   "leak_samples": [
+    "ITALY",
+    "SCHEDULE",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "BUG",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "qa_ok": 0.08333333333333333,
+   "n_train": 50,
+   "final_loss": 0.5111539483070373,
+   "t_s": 97.46225309371948
+  },
+  "gold100": {
+   "id": 0.915,
+   "id_invalid": 0.0,
+   "ood": 0.905,
+   "ood_invalid": 0.0,
+   "leak_label_rate": 1.0,
+   "leak_samples": [
+    "OTHER",
+    "SCHEDULE",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER",
+    "OTHER"
+   ],
+   "qa_ok": 0.0,
+   "n_train": 100,
+   "final_loss": 0.08782973289489746,
+   "t_s": 141.54523420333862
+  }
+ },
+ "t_total_s": 239.1138460636139
+}
