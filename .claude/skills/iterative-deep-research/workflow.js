@@ -9,7 +9,7 @@ const QUESTION = input.question
 const ROUNDS = input.rounds || 3
 if (!QUESTION) throw new Error('Pass a research question')
 
-const SKILL = '/home/avreymi/research/.agents/skills/iterative-deep-researcher/SKILL.md'
+const SKILL = '.agents/skills/iterative-deep-researcher/SKILL.md'
 
 // Research agents rotate through these, one per round.
 const RESEARCHERS = [
