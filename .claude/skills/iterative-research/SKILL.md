@@ -29,9 +29,10 @@ skill is the user's go-ahead to run it.
 
 The loop: research rounds run one after another, each starting from the last
 report. After every second round a reviewer reads the report against the saved
-sources and comments only on reliability; the next round answers those comments
-first. A judge compares each round with the one before and ends the loop when
-there is no real progress. A report never leaves without at least one review,
-unless `maxRounds` is below 3.
+sources and writes comments on reliability into `directions.md`, only where it
+finds a real problem. The next round treats them like its other open leads and
+settles the ones it can. A judge compares each round with the one before and
+ends the loop when there is no real progress. A report never leaves without at
+least one review, unless `maxRounds` is below 3.
 
 Do not do the research yourself instead of running the workflow.
